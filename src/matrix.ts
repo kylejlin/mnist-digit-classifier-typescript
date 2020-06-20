@@ -8,9 +8,20 @@ export class Matrix {
     return new Matrix(rows, columns, data);
   }
 
-  static zero(rows: number, columns: number): Matrix {
+  static zeros(rows: number, columns: number): Matrix {
     const data = new Array(rows * columns).fill(0);
     return new Matrix(rows, columns, data);
+  }
+
+  static fromRows(rows: number[][]): Matrix {
+    const columns = rows[0].length;
+    if (rows.some((row) => row.length !== columns)) {
+      throw new Error(
+        "Cannot create a matrix from a jagged array: " + JSON.stringify(rows)
+      );
+    }
+
+    return new Matrix(rows.length, columns, rows.flat());
   }
 
   public readonly rows: number;
@@ -93,7 +104,7 @@ export class Matrix {
       );
     }
 
-    const product = Matrix.zero(this.rows, other.columns);
+    const product = Matrix.zeros(this.rows, other.columns);
 
     const thisData = this.data;
     const otherData = other.data;
@@ -140,12 +151,8 @@ export class Matrix {
     const transposed = new Matrix(this.columns, this.rows, this.data.slice());
     for (let r = 0; r < this.rows; r++) {
       for (let c = 0; c < this.columns; c++) {
-        if (r === c) {
-          continue;
-        }
-
-        transposed.data[r * transposed.columns + c] = this.data[
-          c * this.columns + r
+        transposed.data[c * transposed.columns + r] = this.data[
+          r * this.columns + c
         ];
       }
     }
@@ -165,4 +172,40 @@ export class Matrix {
     }
     return clone;
   }
+
+  print(decimals: number): string {
+    const entries = this.rowMajorOrderEntries();
+    const entryStrings = entries.map((entry) => entry.toFixed(decimals));
+    const entryStringLengths = entryStrings.map((s) => s.length);
+    const maxLength = Math.max(...entryStringLengths);
+
+    const topAndBottomBorder = "-".repeat(
+      this.columns * (maxLength + " | ".length) - " | ".length
+    );
+
+    let str = topAndBottomBorder + "\n";
+
+    for (let r = 0; r < this.rows; r++) {
+      for (let c = 0; c < this.columns; c++) {
+        str +=
+          leftpad(entryStrings[r * this.columns + c], maxLength, " ") + " | ";
+      }
+
+      str = str.slice(0, -" | ".length);
+
+      str += "\n";
+    }
+
+    str += topAndBottomBorder;
+    return str;
+  }
+}
+
+function leftpad(s: string, minLength: number, fillCharacter: string): string {
+  const diff = minLength - s.length;
+  if (diff <= 0) {
+    return s;
+  }
+
+  return fillCharacter.repeat(diff) + s;
 }

@@ -88,7 +88,7 @@ export class Network {
     const matrices: MatrixMap = [];
     for (let i = 1; i < this.layers; i++) {
       const weightMatrix = this.weights[i];
-      matrices[i] = Matrix.zero(weightMatrix.rows, weightMatrix.columns);
+      matrices[i] = Matrix.zeros(weightMatrix.rows, weightMatrix.columns);
     }
     return matrices;
   }
@@ -97,7 +97,7 @@ export class Network {
     const matrices: MatrixMap = [];
     for (let i = 1; i < this.layers; i++) {
       const biasMatrix = this.biases[i];
-      matrices[i] = Matrix.zero(biasMatrix.rows, biasMatrix.columns);
+      matrices[i] = Matrix.zeros(biasMatrix.rows, biasMatrix.columns);
     }
     return matrices;
   }
