@@ -2,17 +2,17 @@ import { Matrix } from "../matrix";
 
 const DECIMALS = 3;
 
-test("Matrix.random", () => {
-  const a = Matrix.zeros(6, 1);
+test("Matrix.randomUniform", () => {
+  const a = Matrix.randomUniform(6, 1);
   expect([a.rows, a.columns]).toEqual([6, 1]);
   expect(
-    a.rowMajorOrderEntries().every((entry) => entry >= 0 && entry < 1)
+    a.rowMajorOrderEntries().every((entry) => -1 <= entry && entry < 1)
   ).toBe(true);
 
-  const b = Matrix.zeros(2, 3);
+  const b = Matrix.randomUniform(2, 3);
   expect([b.rows, b.columns]).toEqual([2, 3]);
   expect(
-    b.rowMajorOrderEntries().every((entry) => entry >= 0 && entry < 1)
+    b.rowMajorOrderEntries().every((entry) => -1 <= entry && entry < 1)
   ).toBe(true);
 });
 
@@ -139,6 +139,46 @@ test("Matrix.prototye.mutAdd throws if RHS matrix has different dimensions", () 
 
   expect(() => {
     a.mutAdd(b);
+  }).toThrow();
+});
+
+test("Matrix.prototype.mutSubtract", () => {
+  const a = Matrix.fromRows([
+    [-1, 2],
+    [3, -4],
+    [-5, -6],
+  ]);
+  a.mutSubtract(
+    Matrix.fromRows([
+      [7.3, -8],
+      [-9, 10.5],
+      [-11, 12],
+    ])
+  );
+
+  expectEquals(
+    a,
+    Matrix.fromRows([
+      [-1 - 7.3, 2 - -8],
+      [3 - -9, -4 - 10.5],
+      [-5 - -11, -6 - 12],
+    ])
+  );
+});
+
+test("Matrix.prototye.mutSubtract throws if RHS matrix has different dimensions", () => {
+  const a = Matrix.fromRows([
+    [-1, 2],
+    [3, -4],
+    [-5, -6],
+  ]);
+  const b = Matrix.fromRows([
+    [-1, 2, 3],
+    [-4, 5, 6],
+  ]);
+
+  expect(() => {
+    a.mutSubtract(b);
   }).toThrow();
 });
 

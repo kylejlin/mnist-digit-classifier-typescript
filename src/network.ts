@@ -16,11 +16,11 @@ export class Network {
       const inputLayer = outputLayer - 1;
       const outputLayerSize = sizes[outputLayer];
       const inputLayerSize = sizes[inputLayer];
-      this.weights[outputLayer] = Matrix.random(
+      this.weights[outputLayer] = Matrix.randomUniform(
         outputLayerSize,
         inputLayerSize
       );
-      this.biases[outputLayer] = Matrix.random(outputLayerSize, 1);
+      this.biases[outputLayer] = Matrix.randomUniform(outputLayerSize, 1);
     }
 
     this.log = log || (() => {});
@@ -44,8 +44,8 @@ export class Network {
           weightGradients[i].mutMultiplyScalar(learningRate);
           biasGradients[i].mutMultiplyScalar(learningRate);
 
-          this.weights[i].mutAdd(weightGradients[i]);
-          this.biases[i].mutAdd(biasGradients[i]);
+          this.weights[i].mutSubtract(weightGradients[i]);
+          this.biases[i].mutSubtract(biasGradients[i]);
         }
       }
 
@@ -70,7 +70,6 @@ export class Network {
 
     for (const image of miniBatch) {
       const imageGradients = this.getGradients(image);
-
       for (let i = 1; i < this.layers; i++) {
         weightGradients[i].mutAdd(imageGradients.weightGradients[i]);
         biasGradients[i].mutAdd(imageGradients.biasGradients[i]);
@@ -118,19 +117,23 @@ export class Network {
         image.outputs
       )
     );
+
     errors[this.layers - 1] = lastLayerError;
+    weightGradients[this.layers - 1] = lastLayerError.immutMultiply(
+      activations[this.layers - 2].immutTranspose()
+    );
+    biasGradients[this.layers - 1] = lastLayerError;
 
     for (let i = this.layers - 2; i >= 1; i--) {
       const error = this.weights[i + 1]
         .immutTranspose()
         .immutMultiply(errors[i + 1]);
       error.mutHadamard(weightedSums[i].immutApplyElementwise(sigmaPrime));
-      errors[i] = error;
 
+      errors[i] = error;
       weightGradients[i] = error.immutMultiply(
         activations[i - 1].immutTranspose()
       );
-
       biasGradients[i] = error;
     }
 

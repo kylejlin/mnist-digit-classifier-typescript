@@ -1,9 +1,9 @@
 export class Matrix {
-  static random(rows: number, columns: number): Matrix {
+  static randomUniform(rows: number, columns: number): Matrix {
     const size = rows * columns;
     const data = new Array(size);
     for (let i = 0; i < size; i++) {
-      data[i] = Math.random();
+      data[i] = Math.random() * 2 - 1;
     }
     return new Matrix(rows, columns, data);
   }
@@ -67,6 +67,27 @@ export class Matrix {
     const size = this.data.length;
     for (let i = 0; i < size; i++) {
       this.data[i] += other.data[i];
+    }
+  }
+
+  mutSubtract(other: Matrix): void {
+    if (!(other.rows === this.rows && other.columns === this.columns)) {
+      throw new TypeError(
+        "Cannot add a " +
+          this.rows +
+          "x" +
+          this.columns +
+          " to a " +
+          other.rows +
+          "x" +
+          other.columns +
+          " matrix."
+      );
+    }
+
+    const size = this.data.length;
+    for (let i = 0; i < size; i++) {
+      this.data[i] -= other.data[i];
     }
   }
 

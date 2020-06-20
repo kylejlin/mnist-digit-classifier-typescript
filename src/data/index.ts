@@ -80,7 +80,7 @@ function getImages(buffer: ArrayBuffer): ImageMatrix[] {
   while (imagesParsed < numberOfImages) {
     const vectorEntries: number[] = new Array(size);
     for (let j = 0; j < size; j++) {
-      vectorEntries[j] = bytes[firstPixelIndex + imagesParsed * size + j];
+      vectorEntries[j] = bytes[firstPixelIndex + imagesParsed * size + j] / 255;
     }
 
     images[imagesParsed] = {
