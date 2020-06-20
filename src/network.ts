@@ -1,3 +1,4 @@
+import { LabeledImage, VectorLabeledImage } from "./data";
 import { Matrix } from "./matrix";
 
 export class Network {
@@ -26,11 +27,11 @@ export class Network {
   }
 
   stochasticGradientDescent(
-    trainingData: LabeledTrainingImage[],
+    trainingData: VectorLabeledImage[],
     miniBatchSize: number,
     epochs: number,
     learningRate: number,
-    testData?: LabeledTestImage[]
+    testData?: LabeledImage[]
   ): void {
     for (let epoch = 0; epoch < epochs; epoch++) {
       const miniBatches = divideIntoMiniBatches(trainingData, miniBatchSize);
@@ -63,7 +64,7 @@ export class Network {
     }
   }
 
-  private getAverageGradients(miniBatch: LabeledTrainingImage[]): Gradients {
+  private getAverageGradients(miniBatch: VectorLabeledImage[]): Gradients {
     const weightGradients = this.getZeroMatricesForWeightGradients();
     const biasGradients = this.getZeroMatricesForBiasGradients();
 
@@ -102,7 +103,7 @@ export class Network {
     return matrices;
   }
 
-  private getGradients(image: LabeledTrainingImage): Gradients {
+  private getGradients(image: VectorLabeledImage): Gradients {
     const { weightedSums, activations } = this.performForwardPass(image.inputs);
     const errors: MatrixMap = [];
     const weightGradients: MatrixMap = [];
@@ -159,7 +160,7 @@ export class Network {
     return actualOutput.immutSubtract(expectedOutput);
   }
 
-  private getCorrectClassifications(testData: LabeledTestImage[]): number {
+  private getCorrectClassifications(testData: LabeledImage[]): number {
     let correctClassifications = 0;
     for (const image of testData) {
       const { activations } = this.performForwardPass(image.inputs);
@@ -178,18 +179,6 @@ export interface MatrixMap {
   [layer: number]: Matrix;
 }
 
-export interface LabeledTrainingImage {
-  inputs: Matrix;
-  outputs: Matrix;
-}
-
-export interface LabeledTestImage {
-  inputs: Matrix;
-  label: Digit;
-}
-
-export type Digit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
-
 export interface Gradients {
   weightGradients: MatrixMap;
   biasGradients: MatrixMap;
@@ -201,11 +190,11 @@ export interface WeightedSumsAndActivations {
 }
 
 function divideIntoMiniBatches(
-  trainingData: LabeledTrainingImage[],
+  trainingData: VectorLabeledImage[],
   miniBatchSize: number
-): LabeledTrainingImage[][] {
+): VectorLabeledImage[][] {
   shuffle(trainingData);
-  const miniBatches: LabeledTrainingImage[][] = [];
+  const miniBatches: VectorLabeledImage[][] = [];
   for (let i = 0; i < trainingData.length; i += miniBatchSize) {
     miniBatches.push(trainingData.slice(i, i + miniBatchSize));
   }

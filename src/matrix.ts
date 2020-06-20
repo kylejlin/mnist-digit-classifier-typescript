@@ -24,6 +24,10 @@ export class Matrix {
     return new Matrix(rows.length, columns, rows.flat());
   }
 
+  static columnVector(entries: number[]): Matrix {
+    return new Matrix(entries.length, 1, entries);
+  }
+
   public readonly rows: number;
   public readonly columns: number;
   private data: number[];

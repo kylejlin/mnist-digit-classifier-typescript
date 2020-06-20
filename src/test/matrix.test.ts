@@ -45,6 +45,13 @@ test("Matrix.fromRows rejects jagged arrays", () => {
   }).toThrow();
 });
 
+test("Matrix.columnVector", () => {
+  const a = Matrix.columnVector([1, -2, 3.5]);
+  expect(a.rows).toBe(3);
+  expect(a.columns).toBe(1);
+  expect(a.rowMajorOrderEntries()).toEqual([1, -2, 3.5]);
+});
+
 test("Matrix.prototype.clone", () => {
   const a = Matrix.fromRows([
     [-1, 2],
