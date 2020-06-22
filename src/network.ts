@@ -1,13 +1,35 @@
-import { LabeledImage, VectorLabeledImage } from "./data";
+import { LabeledImage, VectorLabeledImage, AccuracyRate } from "./data";
 import { Matrix } from "./matrix";
+import { DeepReadonly } from "./deepReadonly";
 
 export class Network {
   private layers: number;
   private weights: MatrixMap;
   private biases: MatrixMap;
-  private log: (message: string) => void;
+  private log: (accuracyRate: AccuracyRate, epoch: number) => void;
 
-  constructor(sizes: number[], log?: (message: string) => void) {
+  public readonly sizes: number[];
+
+  static fromWeightsAndBiases(weights: MatrixMap, biases: MatrixMap): Network {
+    const sizes = [weights[1].columns];
+    for (let i = 1; i < weights.length; i++) {
+      sizes.push(weights[i].rows);
+    }
+
+    const network = new Network(sizes);
+
+    for (let i = 1; i < weights.length; i++) {
+      network.weights[i] = weights[i];
+      network.biases[i] = biases[i];
+    }
+
+    return network;
+  }
+
+  constructor(
+    sizes: number[],
+    log?: (accuracyRate: AccuracyRate, epoch: number) => void
+  ) {
     this.layers = sizes.length;
 
     this.weights = [];
@@ -24,6 +46,8 @@ export class Network {
     }
 
     this.log = log || (() => {});
+
+    this.sizes = sizes;
   }
 
   stochasticGradientDescent(
@@ -50,16 +74,8 @@ export class Network {
       }
 
       if (testData !== undefined) {
-        const numCorrect = this.getCorrectClassifications(testData);
-        this.log(
-          "Epoch " +
-            epoch +
-            ": " +
-            numCorrect +
-            " / " +
-            testData.length +
-            " correct"
-        );
+        const accuracyRate = this.test(testData);
+        this.log(accuracyRate, epoch);
       }
     }
   }
@@ -140,7 +156,7 @@ export class Network {
     return { weightGradients, biasGradients };
   }
 
-  private performForwardPass(inputs: Matrix): WeightedSumsAndActivations {
+  performForwardPass(inputs: Matrix): WeightedSumsAndActivations {
     const weightedSums: MatrixMap = [];
     const activations: MatrixMap = [inputs];
 
@@ -163,7 +179,7 @@ export class Network {
     return actualOutput.immutSubtract(expectedOutput);
   }
 
-  private getCorrectClassifications(testData: LabeledImage[]): number {
+  test(testData: LabeledImage[]): AccuracyRate {
     let correctClassifications = 0;
     for (const image of testData) {
       const { activations } = this.performForwardPass(image.inputs);
@@ -174,12 +190,21 @@ export class Network {
         correctClassifications++;
       }
     }
-    return correctClassifications;
+    return { correct: correctClassifications, total: testData.length };
+  }
+
+  getWeights(): DeepReadonly<MatrixMap> {
+    return this.weights;
+  }
+
+  getBiases(): DeepReadonly<MatrixMap> {
+    return this.biases;
   }
 }
 
 export interface MatrixMap {
   [layer: number]: Matrix;
+  length: number;
 }
 
 export interface Gradients {

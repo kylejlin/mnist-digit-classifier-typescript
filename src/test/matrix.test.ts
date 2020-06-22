@@ -47,9 +47,34 @@ test("Matrix.fromRows rejects jagged arrays", () => {
 
 test("Matrix.columnVector", () => {
   const a = Matrix.columnVector([1, -2, 3.5]);
-  expect(a.rows).toBe(3);
-  expect(a.columns).toBe(1);
-  expect(a.rowMajorOrderEntries()).toEqual([1, -2, 3.5]);
+  expectEquals(a, Matrix.fromRows([[1], [-2], [3.5]]));
+});
+
+test("Matrix.fromRowMajorOrderEntries", () => {
+  const a = Matrix.fromRowMajorOrderEntries(3, 2, [1, -2, 3.5, 4.2, 5, 6]);
+  expectEquals(
+    a,
+    Matrix.fromRows([
+      [1, -2],
+      [3.5, 4.2],
+      [5, 6],
+    ])
+  );
+
+  const b = Matrix.fromRowMajorOrderEntries(2, 3, [1, -2, 3.5, 4.2, 5, 6]);
+  expectEquals(
+    b,
+    Matrix.fromRows([
+      [1, -2, 3.5],
+      [4.2, 5, 6],
+    ])
+  );
+});
+
+test("Matrix.fromRowMajorOrderEntries throws if number of entries does not match the product of the number rows and columns", () => {
+  expect(() => {
+    Matrix.fromRowMajorOrderEntries(3, 2, [1, -2, 3.5, 4.2, 5, 6, 7, 8]);
+  }).toThrow();
 });
 
 test("Matrix.prototype.clone", () => {

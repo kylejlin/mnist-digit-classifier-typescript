@@ -11,20 +11,24 @@ export interface MnistData {
   test: LabeledImage[];
 }
 
+declare const self: { location: Window["location"] };
+
+const { location } = self;
+
 const TRAINING_IMAGES_URL = url.resolve(
-  window.location.href,
+  location.href,
   "./assets/train60k-images-idx3-ubyte"
 );
 const TRAINING_LABELS_URL = url.resolve(
-  window.location.href,
+  location.href,
   "./assets/train60k-labels-idx1-ubyte"
 );
 const TEST_IMAGES_URL = url.resolve(
-  window.location.href,
+  location.href,
   "./assets/test10k-images-idx3-ubyte"
 );
 const TEST_LABELS_URL = url.resolve(
-  window.location.href,
+  location.href,
   "./assets/test10k-labels-idx1-ubyte"
 );
 const trainingImagesProm: Promise<ArrayBuffer> = fetch(

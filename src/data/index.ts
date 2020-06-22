@@ -20,6 +20,11 @@ interface ImageMatrix {
   matrix: Matrix;
 }
 
+export interface AccuracyRate {
+  correct: number;
+  total: number;
+}
+
 const Idx3FileFormat = {
   MagicNumber: { offset: 0, requiredValue: 0x00000803 },
   NumberOfImages: { offset: 4 },

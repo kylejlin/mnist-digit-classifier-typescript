@@ -28,6 +28,24 @@ export class Matrix {
     return new Matrix(entries.length, 1, entries);
   }
 
+  static fromRowMajorOrderEntries(
+    rows: number,
+    columns: number,
+    entries: number[]
+  ): Matrix {
+    if (entries.length !== rows * columns) {
+      throw new Error(
+        "Expected " +
+          rows * columns +
+          " entries but instead got " +
+          entries.length +
+          "."
+      );
+    }
+
+    return new Matrix(rows, columns, entries);
+  }
+
   public readonly rows: number;
   public readonly columns: number;
   private data: number[];
