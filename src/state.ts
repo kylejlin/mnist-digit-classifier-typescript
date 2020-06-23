@@ -110,6 +110,41 @@ export interface CropState {
   stateType: StateType.Crop;
 
   network: Network;
-
   customImages: CustomImage[];
+
+  uploadedImage: HTMLImageElement;
+  cropSquare: Square;
+  pendingCropAdjustment: Option<SquareAdjustment>;
+  hoveredOverDraggable: Option<Draggable>;
+  shouldInvertImage: boolean;
+  labelInputValue: string;
 }
+
+export interface Square {
+  x: number;
+  y: number;
+  size: number;
+}
+
+export interface SquareAdjustment {
+  dragged: Draggable;
+  startX: number;
+  startY: number;
+  currentX: number;
+  currentY: number;
+}
+
+export enum Draggable {
+  TopLeftCorner,
+  TopRightCorner,
+  BottomRightCorner,
+  BottomLeftCorner,
+
+  EntireSquare,
+}
+
+export type Corner =
+  | Draggable.TopLeftCorner
+  | Draggable.TopRightCorner
+  | Draggable.BottomRightCorner
+  | Draggable.BottomLeftCorner;

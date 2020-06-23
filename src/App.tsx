@@ -1,5 +1,5 @@
 import React from "react";
-import { option, result } from "rusty-ts";
+import { option, Option, result } from "rusty-ts";
 import "./App.css";
 import { AccuracyRate, LabeledImage } from "./data";
 import { MnistData, mnistProm } from "./data/mnist";
@@ -11,19 +11,36 @@ import {
   CreateNetworkState,
   CropState,
   CustomImage,
+  Draggable,
   HyperParameterMenuState,
   NetworkMainMenuState,
+  Square,
   StateMap,
   StateType,
   TestState,
   TrainingInProgressState,
   ViewState,
+  SquareAdjustment,
+  Corner,
 } from "./state";
 import { imageSaver, networkSaver } from "./stateSavers";
 import { StochasticGradientDescentHyperParameters } from "./workerMessages";
 
+interface Rect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface CornerAdjustment extends SquareAdjustment {
+  dragged: Corner;
+}
+
 export default class App extends React.Component<{}, AppState> {
   private viewImageCanvasRef: React.RefObject<HTMLCanvasElement>;
+  private customImageInputRef: React.RefObject<HTMLInputElement>;
+  private cropImageCanvasRef: React.RefObject<HTMLCanvasElement>;
 
   constructor(props: {}) {
     super(props);
@@ -31,6 +48,8 @@ export default class App extends React.Component<{}, AppState> {
     this.state = getInitialState();
 
     this.viewImageCanvasRef = React.createRef();
+    this.customImageInputRef = React.createRef();
+    this.cropImageCanvasRef = React.createRef();
 
     this.bindMethods();
 
@@ -61,6 +80,23 @@ export default class App extends React.Component<{}, AppState> {
     this.onExitViewMenuClick = this.onExitViewMenuClick.bind(this);
     this.onPreviousImageClick = this.onPreviousImageClick.bind(this);
     this.onNextImageClick = this.onNextImageClick.bind(this);
+    this.onCustomImageInputChange = this.onCustomImageInputChange.bind(this);
+    this.enterCropMenu = this.enterCropMenu.bind(this);
+    this.onCropImageCanvasPointerDown = this.onCropImageCanvasPointerDown.bind(
+      this
+    );
+    this.onCropImageCanvasPointerMove = this.onCropImageCanvasPointerMove.bind(
+      this
+    );
+    this.onCropImageCanvasPointerUp = this.onCropImageCanvasPointerUp.bind(
+      this
+    );
+    this.onShouldInvertInputChange = this.onShouldInvertInputChange.bind(this);
+    this.onCustomImageLabelInputValueChange = this.onCustomImageLabelInputValueChange.bind(
+      this
+    );
+    this.onDeleteCustomImageClick = this.onDeleteCustomImageClick.bind(this);
+    this.onAddCustomImageClick = this.onAddCustomImageClick.bind(this);
   }
 
   componentDidMount(): void {
@@ -75,6 +111,11 @@ export default class App extends React.Component<{}, AppState> {
     if ("network" in state) {
       const { network } = state;
       networkSaver.saveState(network);
+    }
+
+    if ("customImages" in state) {
+      const { customImages } = state;
+      imageSaver.saveState(customImages);
     }
   }
 
@@ -313,7 +354,9 @@ export default class App extends React.Component<{}, AppState> {
               {mnist.test.length + state.customImages.length}{" "}
               <button onClick={this.onNextImageClick}>Next</button>
             </div>
+
             <canvas ref={this.viewImageCanvasRef}></canvas>
+
             <div
               className={
                 guess.digit === viewedImage.label ? "" : "IncorrectGuess"
@@ -322,7 +365,27 @@ export default class App extends React.Component<{}, AppState> {
               Guess: {guess.digit} ({(guess.confidence * 100).toFixed(2)}%
               confident)
             </div>
+
             <div>Actual: {viewedImage.label}</div>
+
+            {state.viewedIndex >= mnist.test.length && (
+              <div>
+                <button onClick={this.onDeleteCustomImageClick}>
+                  Delete this image
+                </button>
+              </div>
+            )}
+
+            <div>
+              <label>
+                Upload your own image:{" "}
+                <input
+                  type="file"
+                  ref={this.customImageInputRef}
+                  onChange={this.onCustomImageInputChange}
+                />
+              </label>
+            </div>
           </div>
         );
       },
@@ -331,8 +394,67 @@ export default class App extends React.Component<{}, AppState> {
 
   renderCropMenu(state: CropState): React.ReactElement {
     return (
-      <div className="App">
-        <p>TODO crop menu</p>
+      <div
+        className="App"
+        onMouseMove={this.onCropImageCanvasPointerMove}
+        onMouseUp={this.onCropImageCanvasPointerUp}
+      >
+        <h1>Crop image</h1>
+
+        <div>
+          <canvas
+            ref={this.cropImageCanvasRef}
+            className={
+              "WhiteBackground" +
+              state.hoveredOverDraggable.match({
+                none: () => "",
+                some: (draggable): string => {
+                  switch (draggable) {
+                    case Draggable.TopLeftCorner:
+                    case Draggable.BottomRightCorner:
+                      return " NwseResizeCursor";
+                    case Draggable.TopRightCorner:
+                    case Draggable.BottomLeftCorner:
+                      return " NeswResizeCursor";
+                    case Draggable.EntireSquare:
+                      return " MoveCursor";
+                  }
+                },
+              })
+            }
+            onMouseDown={this.onCropImageCanvasPointerDown}
+          ></canvas>
+        </div>
+
+        <div>
+          <label>
+            Invert{" "}
+            <input
+              type="checkbox"
+              checked={state.shouldInvertImage}
+              onChange={this.onShouldInvertInputChange}
+            />
+          </label>
+        </div>
+
+        <div>
+          <label>
+            Label:{" "}
+            <input
+              type="text"
+              className={isDigit(state.labelInputValue) ? "" : "InvalidInput"}
+              value={state.labelInputValue}
+              onChange={this.onCustomImageLabelInputValueChange}
+            />
+          </label>
+        </div>
+
+        <button
+          disabled={!isDigit(state.labelInputValue)}
+          onClick={this.onAddCustomImageClick}
+        >
+          Add
+        </button>
       </div>
     );
   }
@@ -345,6 +467,27 @@ export default class App extends React.Component<{}, AppState> {
         if (canvas !== null) {
           const viewedImage = getViewedImage(state, mnist);
           paintImage(viewedImage, canvas);
+        }
+      } else if (state.stateType === StateType.Crop) {
+        const canvas = this.cropImageCanvasRef.current;
+        if (canvas !== null) {
+          const adjustedCropSquare = state.pendingCropAdjustment.match({
+            none: () => state.cropSquare,
+            some: (adjustment) => {
+              return applyPendingAdjustment(
+                state.cropSquare,
+                adjustment,
+                canvas.width,
+                canvas.height
+              );
+            },
+          });
+          paintImageAndCropSquare(
+            state.uploadedImage,
+            adjustedCropSquare,
+            canvas,
+            state.shouldInvertImage
+          );
         }
       }
     });
@@ -654,7 +797,7 @@ export default class App extends React.Component<{}, AppState> {
       const numberOfImages = mnist.test.length + state.customImages.length;
       const newIndex =
         state.viewedIndex === 0 ? numberOfImages - 1 : state.viewedIndex - 1;
-      this.setState({ ...state, viewedIndex: newIndex });
+      this.saveState({ ...state, viewedIndex: newIndex });
     });
   }
 
@@ -664,7 +807,227 @@ export default class App extends React.Component<{}, AppState> {
       const numberOfImages = mnist.test.length + state.customImages.length;
       const newIndex =
         state.viewedIndex === numberOfImages - 1 ? 0 : state.viewedIndex + 1;
-      this.setState({ ...state, viewedIndex: newIndex });
+      this.saveState({ ...state, viewedIndex: newIndex });
+    });
+  }
+
+  onCustomImageInputChange(): void {
+    const input = this.customImageInputRef.current;
+    if (input !== null && input.files !== null && input.files.length > 0) {
+      readFileAsHtmlImage(input.files[0]).then(this.enterCropMenu);
+    }
+  }
+
+  enterCropMenu(uploadedImage: HTMLImageElement): void {
+    const state = this.expectState(StateType.View);
+    const newState: CropState = {
+      mnist: state.mnist,
+
+      stateType: StateType.Crop,
+
+      network: state.network,
+      customImages: state.customImages,
+
+      uploadedImage,
+      cropSquare: {
+        x: 0,
+        y: 0,
+        size: Math.min(uploadedImage.width, uploadedImage.height),
+      },
+      pendingCropAdjustment: option.none(),
+      hoveredOverDraggable: option.none(),
+      shouldInvertImage: false,
+      labelInputValue: "",
+    };
+    this.saveState(newState);
+  }
+
+  onCropImageCanvasPointerDown(
+    event:
+      | React.MouseEvent<HTMLCanvasElement>
+      | React.TouchEvent<HTMLCanvasElement>
+  ): void {
+    const state = this.expectState(StateType.Crop);
+    const square = state.cropSquare;
+
+    const rect = this.cropImageCanvasRef.current!.getBoundingClientRect();
+    const { x, y } = getLocalPointerCoordinates(event, rect);
+
+    const optDragged: Option<Draggable> = (() => {
+      if (
+        Math.hypot(x - square.x, y - square.y) <=
+        CropMenuConfig.CornerHandleRadius
+      ) {
+        return option.some(Draggable.TopLeftCorner);
+      } else if (
+        Math.hypot(x - (square.x + square.size), y - square.y) <=
+        CropMenuConfig.CornerHandleRadius
+      ) {
+        return option.some(Draggable.TopRightCorner);
+      } else if (
+        Math.hypot(
+          x - (square.x + square.size),
+          y - (square.y + square.size)
+        ) <= CropMenuConfig.CornerHandleRadius
+      ) {
+        return option.some(Draggable.BottomRightCorner);
+      } else if (
+        Math.hypot(x - square.x, y - (square.y + square.size)) <=
+        CropMenuConfig.CornerHandleRadius
+      ) {
+        return option.some(Draggable.BottomLeftCorner);
+      } else if (
+        x > square.x &&
+        x < square.x + square.size &&
+        y > square.y &&
+        y < square.y + square.size
+      ) {
+        return option.some(Draggable.EntireSquare);
+      } else {
+        return option.none();
+      }
+    })();
+
+    this.saveState({
+      ...state,
+      pendingCropAdjustment: optDragged.map((dragged) => ({
+        dragged,
+        startX: x,
+        startY: y,
+        currentX: x,
+        currentY: y,
+      })),
+    });
+  }
+
+  onCropImageCanvasPointerMove(
+    event: React.MouseEvent | React.TouchEvent
+  ): void {
+    const state = this.expectState(StateType.Crop);
+    const canvas = this.cropImageCanvasRef.current!;
+    const rect = canvas.getBoundingClientRect();
+    const current = getLocalPointerCoordinates(event, rect);
+
+    state.pendingCropAdjustment.match({
+      some: (oldAdjustment) => {
+        const updatedAdjustment: SquareAdjustment = {
+          ...oldAdjustment,
+          currentX: current.x,
+          currentY: current.y,
+        };
+
+        this.saveState({
+          ...state,
+          pendingCropAdjustment: option.some(updatedAdjustment),
+        });
+
+        const adjustedCropSquare = applyPendingAdjustment(
+          state.cropSquare,
+          updatedAdjustment,
+          canvas.width,
+          canvas.height
+        );
+        paintImageAndCropSquare(
+          state.uploadedImage,
+          adjustedCropSquare,
+          canvas,
+          state.shouldInvertImage
+        );
+      },
+
+      none: () => {
+        this.saveState({
+          ...state,
+          hoveredOverDraggable: getHoveredOverDraggable(
+            state.cropSquare,
+            current.x,
+            current.y
+          ),
+        });
+      },
+    });
+  }
+
+  onCropImageCanvasPointerUp(): void {
+    const state = this.expectState(StateType.Crop);
+    const canvas = this.cropImageCanvasRef.current!;
+    const updatedCropSquare = state.pendingCropAdjustment.match({
+      none: () => state.cropSquare,
+      some: (adjustment) =>
+        applyPendingAdjustment(
+          state.cropSquare,
+          adjustment,
+          canvas.width,
+          canvas.height
+        ),
+    });
+
+    this.saveState({
+      ...state,
+      pendingCropAdjustment: option.none(),
+      cropSquare: updatedCropSquare,
+    });
+  }
+
+  onShouldInvertInputChange(event: React.ChangeEvent<HTMLInputElement>): void {
+    const state = this.expectState(StateType.Crop);
+    const newState: CropState = {
+      ...state,
+      shouldInvertImage: event.target.checked,
+    };
+    this.saveState(newState);
+  }
+
+  onCustomImageLabelInputValueChange(
+    event: React.ChangeEvent<HTMLInputElement>
+  ): void {
+    const state = this.expectState(StateType.Crop);
+    const newState: CropState = {
+      ...state,
+      labelInputValue: event.target.value,
+    };
+    this.saveState(newState);
+  }
+
+  onAddCustomImageClick(): void {
+    const state = this.expectState(StateType.Crop);
+
+    if (!isDigit(state.labelInputValue)) {
+      return;
+    }
+
+    state.mnist.ifSome((mnist) => {
+      const label = +state.labelInputValue;
+      const newImage = getCustomImage(state, label, state.shouldInvertImage);
+      const updatedCustomImages = state.customImages.concat([newImage]);
+      const newImageIndex = mnist.test.length + updatedCustomImages.length - 1;
+      const newState: ViewState = {
+        mnist: state.mnist,
+
+        stateType: StateType.View,
+
+        network: state.network,
+
+        viewedIndex: newImageIndex,
+        customImages: updatedCustomImages,
+      };
+      this.saveState(newState);
+    });
+  }
+
+  onDeleteCustomImageClick(): void {
+    const state = this.expectState(StateType.View);
+    state.mnist.ifSome((mnist) => {
+      const customImageIndex = state.viewedIndex - mnist.test.length;
+      const newCustomImages = state.customImages
+        .slice(0, customImageIndex)
+        .concat(state.customImages.slice(customImageIndex + 1));
+      const newState: ViewState = {
+        ...state,
+        customImages: newCustomImages,
+        viewedIndex: state.viewedIndex - 1,
+      };
+      this.saveState(newState);
     });
   }
 }
@@ -757,4 +1120,439 @@ function getImageData(image: LabeledImage): ImageData {
     imageBytes[i * 4 + 3] = 255;
   }
   return new ImageData(imageBytes, image.columns, image.rows);
+}
+
+function readFileAsHtmlImage(file: File): Promise<HTMLImageElement> {
+  return readFileAsDataUrl(file).then(
+    (url) =>
+      new Promise((resolve, reject) => {
+        const img = document.createElement("img");
+        img.src = url;
+        img.addEventListener("load", () => resolve(img));
+        img.addEventListener("error", reject);
+      })
+  );
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(reader.result as string));
+    reader.addEventListener("error", () => reject(reader.error));
+    reader.readAsDataURL(file);
+  });
+}
+
+const CropMenuConfig = {
+  OverlayColor: "#000a",
+
+  CropSquareColor: "#08b",
+  CropSquareLineWidth: 3,
+  CornerHandleRadius: 10,
+} as const;
+
+function paintImageAndCropSquare(
+  image: HTMLImageElement,
+  crop: Square,
+  canvas: HTMLCanvasElement,
+  shouldInvert: boolean
+): void {
+  canvas.width = image.width;
+  canvas.height = image.height;
+
+  const ctx = canvas.getContext("2d")!;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(image, 0, 0);
+
+  if (shouldInvert) {
+    invertContext(ctx);
+  }
+
+  paintOverlay();
+  paintCompressedImage();
+  paintCropSquare();
+
+  return;
+
+  function paintOverlay(): void {
+    const cropBottom = crop.y + crop.size;
+    const cropRight = crop.x + crop.size;
+    ctx.fillStyle = CropMenuConfig.OverlayColor;
+    ctx.fillRect(0, 0, canvas.width, crop.y);
+    ctx.fillRect(0, cropBottom, canvas.width, canvas.height - cropBottom);
+    ctx.fillRect(0, crop.y, crop.x, crop.size);
+    ctx.fillRect(cropRight, crop.y, canvas.width - cropRight, crop.size);
+  }
+
+  function paintCompressedImage(): void {
+    ctx.clearRect(crop.x, crop.y, crop.size, crop.size);
+
+    const compressed = cropAndCompress(image, crop, shouldInvert);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(compressed, crop.x, crop.y, crop.size, crop.size);
+  }
+
+  function paintCropSquare(): void {
+    ctx.strokeStyle = CropMenuConfig.CropSquareColor;
+    ctx.lineWidth = CropMenuConfig.CropSquareLineWidth;
+    ctx.strokeRect(crop.x, crop.y, crop.size, crop.size);
+
+    drawCropSquareCircle(crop.x, crop.y);
+    drawCropSquareCircle(crop.x + crop.size, crop.y);
+    drawCropSquareCircle(crop.x + crop.size, crop.y + crop.size);
+    drawCropSquareCircle(crop.x, crop.y + crop.size);
+  }
+
+  function drawCropSquareCircle(x: number, y: number): void {
+    ctx.moveTo(x, y);
+    ctx.beginPath();
+    ctx.arc(x, y, CropMenuConfig.CornerHandleRadius, 0, 2 * Math.PI);
+    ctx.closePath();
+
+    ctx.fillStyle = CropMenuConfig.CropSquareColor;
+    ctx.fill();
+  }
+}
+
+function applyWhiteBackground(srcCtx: CanvasRenderingContext2D): void {
+  const { width, height } = srcCtx.canvas;
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+  ctx.drawImage(srcCtx.canvas, 0, 0);
+
+  const imageData = ctx.getImageData(0, 0, width, height);
+  srcCtx.putImageData(imageData, 0, 0);
+}
+
+function getLocalPointerCoordinates(
+  event: React.MouseEvent | React.TouchEvent,
+  boundingRect: DOMRect
+): { x: number; y: number } {
+  const { x, y } = getGlobalPointerCoordinates(event);
+  return { x: x - boundingRect.left, y: y - boundingRect.top };
+}
+
+function getGlobalPointerCoordinates(
+  event: React.MouseEvent | React.TouchEvent
+): { x: number; y: number } {
+  if ("clientX" in event) {
+    return { x: event.clientX, y: event.clientY };
+  } else {
+    return { x: event.touches[0].clientX, y: event.touches[0].clientY };
+  }
+}
+
+function applyPendingAdjustment(
+  square: Square,
+  adjustment: SquareAdjustment,
+  canvasWidth: number,
+  canvasHeight: number
+): Square {
+  const possiblyOutOfBounds = applyPendingAdjustmentToGetPossiblyOutOfBoundsSquare(
+    square,
+    adjustment
+  );
+  return transformBackIntoBoundsIfNeeded(
+    possiblyOutOfBounds,
+    canvasWidth,
+    canvasHeight,
+    adjustment.dragged === Draggable.EntireSquare
+  );
+}
+
+function applyPendingAdjustmentToGetPossiblyOutOfBoundsSquare(
+  square: Square,
+  adjustment: SquareAdjustment
+): Square {
+  if (isCornerAdjustment(adjustment)) {
+    const rect = {
+      x: square.x,
+      y: square.y,
+      width: square.size,
+      height: square.size,
+    };
+    const adjustedRect = applyPendingCornerAdjustmentToRect(rect, adjustment);
+    return clamp(adjustedRect, adjustment.dragged);
+  } else {
+    const dx = adjustment.currentX - adjustment.startX;
+    const dy = adjustment.currentY - adjustment.startY;
+    return applyTranslation(square, dx, dy);
+  }
+}
+
+function isCornerAdjustment(
+  adjustment: SquareAdjustment
+): adjustment is CornerAdjustment {
+  return adjustment.dragged !== Draggable.EntireSquare;
+}
+
+function applyPendingCornerAdjustmentToRect(
+  rect: Rect,
+  adjustment: CornerAdjustment
+): Rect {
+  const corner = adjustment.dragged;
+  const { currentX, currentY } = adjustment;
+
+  let left = rect.x;
+  let right = rect.x + rect.width;
+  let top = rect.y;
+  let bottom = rect.y + rect.height;
+
+  switch (corner) {
+    case Draggable.TopLeftCorner:
+      top = Math.min(currentY, bottom);
+      left = Math.min(currentX, right);
+      break;
+    case Draggable.TopRightCorner:
+      top = Math.min(currentY, bottom);
+      right = Math.max(currentX, left);
+      break;
+    case Draggable.BottomRightCorner:
+      bottom = Math.max(currentY, top);
+      right = Math.max(currentX, left);
+      break;
+    case Draggable.BottomLeftCorner:
+      bottom = Math.max(currentY, top);
+      left = Math.min(currentX, right);
+      break;
+  }
+
+  if (left > right) {
+    [left, right] = [right, left];
+  }
+  if (top > bottom) {
+    [top, bottom] = [bottom, top];
+  }
+
+  return {
+    x: left,
+    y: top,
+    width: right - left,
+    height: bottom - top,
+  };
+}
+
+function clamp(rect: Rect, dragged: Corner): Square {
+  const anchor = getDiagonal(dragged);
+  switch (anchor) {
+    case Draggable.TopLeftCorner:
+      return clampToTopLeft(rect);
+    case Draggable.TopRightCorner:
+      return clampToTopRight(rect);
+    case Draggable.BottomRightCorner:
+      return clampToBottomRight(rect);
+    case Draggable.BottomLeftCorner:
+      return clampToBottomLeft(rect);
+  }
+}
+
+function clampToTopLeft(rect: Rect): Square {
+  const { x, y, width, height } = rect;
+  const size = Math.min(width, height);
+  return { x, y, size };
+}
+
+function clampToTopRight(rect: Rect): Square {
+  const { x, y, width, height } = rect;
+  const size = Math.min(width, height);
+  return { x: width > height ? x + width - size : x, y, size };
+}
+
+function clampToBottomRight(rect: Rect): Square {
+  const { x, y, width, height } = rect;
+  const size = Math.min(width, height);
+  return {
+    x: width > height ? x + width - size : x,
+    y: height > width ? y + height - size : y,
+    size,
+  };
+}
+
+function clampToBottomLeft(rect: Rect): Square {
+  const { x, y, width, height } = rect;
+  const size = Math.min(width, height);
+  return { x, y: height > width ? y + height - size : y, size };
+}
+
+function getDiagonal(corner: Corner): Corner {
+  switch (corner) {
+    case Draggable.TopLeftCorner:
+      return Draggable.BottomRightCorner;
+    case Draggable.TopRightCorner:
+      return Draggable.BottomLeftCorner;
+    case Draggable.BottomRightCorner:
+      return Draggable.TopLeftCorner;
+    case Draggable.BottomLeftCorner:
+      return Draggable.TopRightCorner;
+  }
+}
+
+function applyTranslation(square: Square, dx: number, dy: number): Square {
+  return { x: square.x + dx, y: square.y + dy, size: square.size };
+}
+
+function getHoveredOverDraggable(
+  square: Square,
+  x: number,
+  y: number
+): Option<Draggable> {
+  if (
+    Math.hypot(x - square.x, y - square.y) <= CropMenuConfig.CornerHandleRadius
+  ) {
+    return option.some(Draggable.TopLeftCorner);
+  } else if (
+    Math.hypot(x - (square.x + square.size), y - square.y) <=
+    CropMenuConfig.CornerHandleRadius
+  ) {
+    return option.some(Draggable.TopRightCorner);
+  } else if (
+    Math.hypot(x - (square.x + square.size), y - (square.y + square.size)) <=
+    CropMenuConfig.CornerHandleRadius
+  ) {
+    return option.some(Draggable.BottomRightCorner);
+  } else if (
+    Math.hypot(x - square.x, y - (square.y + square.size)) <=
+    CropMenuConfig.CornerHandleRadius
+  ) {
+    return option.some(Draggable.BottomLeftCorner);
+  } else if (
+    x > square.x &&
+    x < square.x + square.size &&
+    y > square.y &&
+    y < square.y + square.size
+  ) {
+    return option.some(Draggable.EntireSquare);
+  } else {
+    return option.none();
+  }
+}
+
+function transformBackIntoBoundsIfNeeded(
+  square: Square,
+  width: number,
+  height: number,
+  preserveSize: boolean
+): Square {
+  if (preserveSize) {
+    const { x, y, size } = square;
+
+    const maxX = width - size;
+    const maxY = height - size;
+
+    return {
+      x: Math.max(0, Math.min(x, maxX)),
+      y: Math.max(0, Math.min(y, maxY)),
+      size,
+    };
+  } else {
+    let { x, y, size } = square;
+
+    x = Math.max(0, Math.min(x, width));
+    y = Math.max(0, Math.min(y, height));
+
+    const maxSize = Math.min(width - x, height - y);
+    size = Math.min(size, maxSize);
+
+    return { x, y, size };
+  }
+}
+
+function cropAndCompress(
+  image: HTMLImageElement,
+  crop: Square,
+  shouldInvert: boolean
+): HTMLCanvasElement {
+  const canvas = document.createElement("canvas");
+  canvas.width = 28;
+  canvas.height = 28;
+
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(image, crop.x, crop.y, crop.size, crop.size, 0, 0, 28, 28);
+
+  applyGrayscale(ctx);
+
+  if (shouldInvert) {
+    invertContext(ctx);
+  }
+
+  return canvas;
+}
+
+function invertContext(ctx: CanvasRenderingContext2D): void {
+  const imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
+  const bytes = imageData.data;
+  for (let i = 0; i < bytes.length; i += 4) {
+    bytes[i] = 255 - bytes[i];
+    bytes[i + 1] = 255 - bytes[i + 1];
+    bytes[i + 2] = 255 - bytes[i + 2];
+  }
+  ctx.putImageData(imageData, 0, 0);
+}
+
+function applyGrayscale(ctx: CanvasRenderingContext2D): void {
+  const imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
+  const bytes = imageData.data;
+  for (let i = 0; i < bytes.length; i += 4) {
+    const average = Math.floor((bytes[i] + bytes[i + 1] + bytes[i + 2]) / 3);
+    bytes[i] = average;
+    bytes[i + 1] = average;
+    bytes[i + 2] = average;
+  }
+  ctx.putImageData(imageData, 0, 0);
+}
+
+function isDigit(s: string): boolean {
+  return /^\d$/.test(s);
+}
+
+function getCustomImage(
+  state: CropState,
+  label: number,
+  shouldInvert: boolean
+): CustomImage {
+  const { cropSquare, uploadedImage } = state;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 28;
+  canvas.height = 28;
+
+  const ctx = canvas.getContext("2d")!;
+
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(
+    uploadedImage,
+    cropSquare.x,
+    cropSquare.y,
+    cropSquare.size,
+    cropSquare.size,
+    0,
+    0,
+    28,
+    28
+  );
+
+  if (shouldInvert) {
+    invertContext(ctx);
+  }
+
+  applyWhiteBackground(ctx);
+
+  const u8Matrix = getU8Matrix(ctx.getImageData(0, 0, 28, 28));
+  return { u8Matrix, label };
+}
+
+function getU8Matrix(imageData: ImageData): Matrix {
+  const { data } = imageData;
+  const u8s = new Array(data.length / 4);
+  for (let i = 0; i < data.length; i += 4) {
+    const average = Math.floor((data[i] + data[i + 1] + data[i + 2]) / 3);
+    u8s[i / 4] = 255 - average;
+  }
+  return Matrix.columnVector(u8s);
 }

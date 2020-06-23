@@ -5,3 +5,19 @@
 .IncorrectGuess {
   color: red;
 }
+
+.NwseResizeCursor {
+  cursor: nwse-resize;
+}
+
+.NeswResizeCursor {
+  cursor: nesw-resize;
+}
+
+.MoveCursor {
+  cursor: move;
+}
+
+.WhiteBackground {
+  background-color: white;
+}

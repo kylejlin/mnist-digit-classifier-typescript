@@ -37,9 +37,12 @@ export const imageSaver: StateSaver<CustomImage[]> = {
 
       const byteVectors: CustomImage[] = new Array(numberOfImages);
       for (let i = 0; i < numberOfImages; i++) {
-        const imageBytes = bytes.subarray(i * 784, i * 784 + 784);
+        const imageBytes = bytes.subarray(
+          i * BYTES_PER_IMAGE,
+          i * BYTES_PER_IMAGE + 784
+        );
         const u8Matrix = Matrix.columnVector(toArray(imageBytes));
-        byteVectors[i] = { u8Matrix, label: bytes[i * 784 + 784] };
+        byteVectors[i] = { u8Matrix, label: bytes[i * BYTES_PER_IMAGE + 784] };
       }
       return option.some(byteVectors);
     }
