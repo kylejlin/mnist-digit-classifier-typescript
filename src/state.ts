@@ -113,6 +113,7 @@ export interface CropState {
   customImages: CustomImage[];
 
   uploadedImage: HTMLImageElement;
+  darknessThreshold: number;
   cropSquare: Square;
   pendingCropAdjustment: Option<SquareAdjustment>;
   hoveredOverDraggable: Option<Draggable>;

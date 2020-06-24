@@ -92,6 +92,7 @@ export default class App extends React.Component<{}, AppState> {
       this
     );
     this.onShouldInvertInputChange = this.onShouldInvertInputChange.bind(this);
+    this.onDarknessThresholdChange = this.onDarknessThresholdChange.bind(this);
     this.onCustomImageLabelInputValueChange = this.onCustomImageLabelInputValueChange.bind(
       this
     );
@@ -443,6 +444,20 @@ export default class App extends React.Component<{}, AppState> {
 
         <div>
           <label>
+            Darkness threshold:{" "}
+            <input
+              type="range"
+              value={state.darknessThreshold}
+              min={0}
+              max={1}
+              step={0.001}
+              onChange={this.onDarknessThresholdChange}
+            />
+          </label>
+        </div>
+
+        <div>
+          <label>
             Label:{" "}
             <input
               type="text"
@@ -490,7 +505,8 @@ export default class App extends React.Component<{}, AppState> {
             state.uploadedImage,
             adjustedCropSquare,
             canvas,
-            state.shouldInvertImage
+            state.shouldInvertImage,
+            state.darknessThreshold
           );
         }
       }
@@ -833,6 +849,7 @@ export default class App extends React.Component<{}, AppState> {
       customImages: state.customImages,
 
       uploadedImage,
+      darknessThreshold: getAverageDarkness(uploadedImage),
       cropSquare: {
         x: 0,
         y: 0,
@@ -935,7 +952,8 @@ export default class App extends React.Component<{}, AppState> {
           state.uploadedImage,
           adjustedCropSquare,
           canvas,
-          state.shouldInvertImage
+          state.shouldInvertImage,
+          state.darknessThreshold
         );
       },
 
@@ -982,6 +1000,20 @@ export default class App extends React.Component<{}, AppState> {
     this.saveState(newState);
   }
 
+  onDarknessThresholdChange(event: React.ChangeEvent<HTMLInputElement>): void {
+    const state = this.expectState(StateType.Crop);
+    const newThreshold = +event.target.value;
+    const newState: CropState = { ...state, darknessThreshold: newThreshold };
+    this.saveState(newState);
+    paintImageAndCropSquare(
+      state.uploadedImage,
+      state.cropSquare,
+      this.cropImageCanvasRef.current!,
+      state.shouldInvertImage,
+      newThreshold
+    );
+  }
+
   onCustomImageLabelInputValueChange(
     event: React.ChangeEvent<HTMLInputElement>
   ): void {
@@ -1002,7 +1034,12 @@ export default class App extends React.Component<{}, AppState> {
 
     state.mnist.ifSome((mnist) => {
       const label = +state.labelInputValue;
-      const newImage = getCustomImage(state, label, state.shouldInvertImage);
+      const newImage = getCustomImage(
+        state,
+        label,
+        state.shouldInvertImage,
+        state.darknessThreshold
+      );
       const updatedCustomImages = state.customImages.concat([newImage]);
       const newImageIndex = mnist.test.length + updatedCustomImages.length - 1;
       const newState: ViewState = {
@@ -1159,7 +1196,8 @@ function paintImageAndCropSquare(
   image: HTMLImageElement,
   crop: Square,
   canvas: HTMLCanvasElement,
-  shouldInvert: boolean
+  shouldInvert: boolean,
+  darknessThreshold: number
 ): void {
   canvas.width = image.width;
   canvas.height = image.height;
@@ -1192,7 +1230,12 @@ function paintImageAndCropSquare(
   function paintCompressedImage(): void {
     ctx.clearRect(crop.x, crop.y, crop.size, crop.size);
 
-    const compressed = cropAndCompress(image, crop, shouldInvert);
+    const compressed = cropAndCompress(
+      image,
+      crop,
+      shouldInvert,
+      darknessThreshold
+    );
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(compressed, crop.x, crop.y, crop.size, crop.size);
   }
@@ -1470,7 +1513,8 @@ function transformBackIntoBoundsIfNeeded(
 function cropAndCompress(
   image: HTMLImageElement,
   crop: Square,
-  shouldInvert: boolean
+  shouldInvert: boolean,
+  darknessThreshold: number
 ): HTMLCanvasElement {
   const canvas = document.createElement("canvas");
   canvas.width = 28;
@@ -1484,6 +1528,8 @@ function cropAndCompress(
   if (shouldInvert) {
     invertContext(ctx);
   }
+
+  applyDarknessThreshold(ctx, darknessThreshold);
 
   return canvas;
 }
@@ -1501,12 +1547,34 @@ function invertContext(ctx: CanvasRenderingContext2D): void {
 
 function applyGrayscale(ctx: CanvasRenderingContext2D): void {
   const imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
-  const bytes = imageData.data;
-  for (let i = 0; i < bytes.length; i += 4) {
-    const average = Math.floor((bytes[i] + bytes[i + 1] + bytes[i + 2]) / 3);
-    bytes[i] = average;
-    bytes[i + 1] = average;
-    bytes[i + 2] = average;
+  const pixels = imageData.data;
+  for (let i = 0; i < pixels.length; i += 4) {
+    const averageLightness = Math.floor(
+      (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3
+    );
+    pixels[i] = averageLightness;
+    pixels[i + 1] = averageLightness;
+    pixels[i + 2] = averageLightness;
+  }
+  ctx.putImageData(imageData, 0, 0);
+}
+
+function applyDarknessThreshold(
+  ctx: CanvasRenderingContext2D,
+  darknessThreshold: number
+): void {
+  const lightnessThreshold = 1 - darknessThreshold;
+  const imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
+  const pixels = imageData.data;
+  for (let i = 0; i < pixels.length; i += 4) {
+    const averageLightness = Math.floor(
+      (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3
+    );
+    const normalizedLightness = averageLightness / 255;
+    const roundedLightness = normalizedLightness < lightnessThreshold ? 0 : 255;
+    pixels[i] = roundedLightness;
+    pixels[i + 1] = roundedLightness;
+    pixels[i + 2] = roundedLightness;
   }
   ctx.putImageData(imageData, 0, 0);
 }
@@ -1518,7 +1586,8 @@ function isDigit(s: string): boolean {
 function getCustomImage(
   state: CropState,
   label: number,
-  shouldInvert: boolean
+  shouldInvert: boolean,
+  darknessThreshold: number
 ): CustomImage {
   const { cropSquare, uploadedImage } = state;
 
@@ -1547,16 +1616,49 @@ function getCustomImage(
 
   applyWhiteBackground(ctx);
 
-  const u8Matrix = getU8Matrix(ctx.getImageData(0, 0, 28, 28));
+  const u8Matrix = getU8Matrix(
+    ctx.getImageData(0, 0, 28, 28),
+    darknessThreshold
+  );
   return { u8Matrix, label };
 }
 
-function getU8Matrix(imageData: ImageData): Matrix {
+function getU8Matrix(imageData: ImageData, darknessThreshold: number): Matrix {
+  const lightnessThreshold = 1 - darknessThreshold;
+
   const { data } = imageData;
   const u8s = new Array(data.length / 4);
   for (let i = 0; i < data.length; i += 4) {
-    const average = Math.floor((data[i] + data[i + 1] + data[i + 2]) / 3);
-    u8s[i / 4] = 255 - average;
+    const averageLightness = Math.floor(
+      (data[i] + data[i + 1] + data[i + 2]) / 3
+    );
+    const normalizedLightness = averageLightness / 255;
+    const roundedLightness = normalizedLightness < lightnessThreshold ? 0 : 255;
+    const roundedDarkness = 255 - roundedLightness;
+    u8s[i / 4] = roundedDarkness;
   }
   return Matrix.columnVector(u8s);
+}
+
+/** Returns a float between 0 and 1. */
+function getAverageDarkness(image: HTMLImageElement): number {
+  const canvas = document.createElement("canvas");
+  canvas.width = image.width;
+  canvas.height = image.height;
+
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(image, 0, 0);
+
+  const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+  let totalLightness = 0;
+  for (let i = 0; i < pixels.length; i += 4) {
+    const lightness = Math.floor(
+      (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3
+    );
+    totalLightness += lightness;
+  }
+  const numberOfPixels = pixels.length / 4;
+  const averageLightness = Math.floor(totalLightness / numberOfPixels);
+  const averageDarkness = 255 - averageLightness;
+  return averageDarkness / 255;
 }
