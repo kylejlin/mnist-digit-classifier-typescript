@@ -21,6 +21,7 @@
 .CropImageCanvas {
   max-width: var(--minor-axis);
   max-height: var(--minor-axis);
+  touch-action: pinch-zoom;
 }
 
 .WhiteBackground {
