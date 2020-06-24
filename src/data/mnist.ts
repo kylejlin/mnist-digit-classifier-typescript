@@ -31,18 +31,40 @@ const TEST_LABELS_URL = url.resolve(
   location.href,
   "./assets/test10k-labels-idx1-ubyte"
 );
-const trainingImagesProm: Promise<ArrayBuffer> = fetch(
+const trainingImagesProm: Promise<ArrayBuffer> = getArrayBuffer(
   TRAINING_IMAGES_URL
-).then((response) => response.arrayBuffer());
-const trainingLabelsProm: Promise<ArrayBuffer> = fetch(
+);
+const trainingLabelsProm: Promise<ArrayBuffer> = getArrayBuffer(
   TRAINING_LABELS_URL
-).then((response) => response.arrayBuffer());
-const testImagesProm: Promise<ArrayBuffer> = fetch(
-  TEST_IMAGES_URL
-).then((response) => response.arrayBuffer());
-const testLabelsProm: Promise<ArrayBuffer> = fetch(
-  TEST_LABELS_URL
-).then((response) => response.arrayBuffer());
+);
+const testImagesProm: Promise<ArrayBuffer> = getArrayBuffer(TEST_IMAGES_URL);
+const testLabelsProm: Promise<ArrayBuffer> = getArrayBuffer(TEST_LABELS_URL);
+
+function getArrayBuffer(url: string): Promise<ArrayBuffer> {
+  return fetch(url).then((response) => {
+    if (200 <= response.status && response.status <= 299) {
+      return response.arrayBuffer();
+    } else {
+      return getErrorMessage(response).then((errorMessage) =>
+        Promise.reject(
+          new Error(
+            "Tried to fetch " +
+              url +
+              " but got the following error: " +
+              errorMessage
+          )
+        )
+      );
+    }
+  });
+}
+
+function getErrorMessage(response: Response): Promise<string> {
+  const { status, statusText } = response;
+  return response
+    .text()
+    .then((text) => status + " (" + statusText + "): " + text);
+}
 
 export const mnistProm: Promise<MnistData> = Promise.all([
   trainingImagesProm,

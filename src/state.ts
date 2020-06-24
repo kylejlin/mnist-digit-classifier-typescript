@@ -12,7 +12,8 @@ export type AppState =
   | TrainingInProgressState
   | TestState
   | ViewState
-  | CropState;
+  | CropState
+  | MnistLoadingErrorState;
 
 export enum StateType {
   CreateNetwork,
@@ -22,6 +23,8 @@ export enum StateType {
   Test,
   View,
   Crop,
+
+  MnistLoadingError,
 }
 
 export interface StateMap {
@@ -32,6 +35,8 @@ export interface StateMap {
   [StateType.Test]: TestState;
   [StateType.View]: ViewState;
   [StateType.Crop]: CropState;
+
+  [StateType.MnistLoadingError]: MnistLoadingErrorState;
 }
 
 export interface CreateNetworkState {
@@ -149,3 +154,11 @@ export type Corner =
   | Draggable.TopRightCorner
   | Draggable.BottomRightCorner
   | Draggable.BottomLeftCorner;
+
+export interface MnistLoadingErrorState {
+  mnist: Option<MnistData>;
+
+  stateType: StateType.MnistLoadingError;
+
+  errorMessage: string;
+}

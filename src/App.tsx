@@ -22,6 +22,7 @@ import {
   ViewState,
   SquareAdjustment,
   Corner,
+  MnistLoadingErrorState,
 } from "./state";
 import { imageSaver, networkSaver } from "./stateSavers";
 import { StochasticGradientDescentHyperParameters } from "./workerMessages";
@@ -101,9 +102,20 @@ export default class App extends React.Component<{}, AppState> {
   }
 
   componentDidMount(): void {
-    mnistProm.then((mnist) => {
-      this.setState({ mnist: option.some(mnist) });
-    });
+    mnistProm.then(
+      (mnist) => {
+        this.setState({ mnist: option.some(mnist) });
+      },
+
+      (error: Error) => {
+        const newState: MnistLoadingErrorState = {
+          mnist: option.none(),
+          stateType: StateType.MnistLoadingError,
+          errorMessage: error.message,
+        };
+        this.saveState(newState);
+      }
+    );
   }
 
   saveState(state: AppState): void {
@@ -137,6 +149,9 @@ export default class App extends React.Component<{}, AppState> {
         return this.renderViewMenu(state);
       case StateType.Crop:
         return this.renderCropMenu(state);
+
+      case StateType.MnistLoadingError:
+        return this.renderMnistLoadingErrorScreen(state);
     }
   }
 
@@ -474,6 +489,17 @@ export default class App extends React.Component<{}, AppState> {
         >
           Add
         </button>
+      </div>
+    );
+  }
+
+  renderMnistLoadingErrorScreen(
+    state: MnistLoadingErrorState
+  ): React.ReactElement {
+    return (
+      <div className="App">
+        <h1>Error loading MNIST data set:</h1>
+        <p>{state.errorMessage}</p>
       </div>
     );
   }
