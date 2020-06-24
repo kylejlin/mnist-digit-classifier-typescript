@@ -1,44 +1,59 @@
+# MNIST Digit Classifier
+
+A simple neural network written in TypeScript.
+
+I built this solely for my own education, not for practical use.
+As a result, this project doesn't use any neural network or math libraries, and is also not optimized for performance.
+
+I tried to implement my neural network as closely as possible to the implementation described in [Chapter 1 of Michael Nielsen's _Neural Networks and Deep Learning_](http://neuralnetworksanddeeplearning.com/chap1.html).
+
+The network may appear complicated because there are a lot of files in `src`, but all the business logic can be found in `network.ts` and `matrix.ts`.
+All the other files are for the user interface.
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-## Available Scripts
+## How to use the web app
 
-In the project directory, you can run:
+1. Open [https://kylejlin.github.io/mnist-digit-classifier-typescript](https://kylejlin.github.io/mnist-digit-classifier-typescript).
 
-### `npm start`
+2. Create a neural network:
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+   a. Optional: Configure how many hidden layers you want and how many neurons you want in each layer.
 
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+   b. Click "Create network"
 
-### `npm test`
+3. Train your neural network:
 
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+   a. Click "Train" to open the training menu.
 
-### `npm run build`
+   b. Optional: Configure the hyperparameters to your liking.
 
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
+   c. Click "Start" to start the training.
 
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
+   d. Wait. Training the network will probably take quite a while, especially if your computer isn't very fast or you're on mobile. Keep in mind that this code was not optimized for speed.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+   e. Eventually, under the "Logs" header, you will see "Epoch 0: [some number] / 10000". At this point, you can either wait for the network to complete more training epochs, or you can tell the network to stop training after the next epoch is completed.
 
-### `npm run eject`
+   f. When you want to stop training, click "Stop training after the current epoch".
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+   g. Wait some more. After a little while, you will be taken back to the main menu. This will probably take quite a while.
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+4. View your neural network in action:
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+   a. Click "View"
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+   b. Use the "Previous" and "Next" buttons to change the classified image.
 
-## Learn More
+   c. If you would like, you can upload and crop your own images.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+5. Your network and uploaded testing images should be saved in your browser, so you shouldn't have to retrain the network and reupload the images when you revisit this page in the future.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Data set
+
+The dataset is from [Yann LeCun's website](http://yann.lecun.com/exdb/mnist/).
+
+## License
+
+MIT
+
+Copyright (c) 2020 Kyle Lin
