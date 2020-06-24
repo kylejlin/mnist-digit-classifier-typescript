@@ -1,0 +1,28 @@
+{
+  "files": {
+    "main.css": "/mnist-digit-classifier-typescript/static/css/main.7ff26fab.chunk.css",
+    "main.js": "/mnist-digit-classifier-typescript/static/js/main.50c67af4.chunk.js",
+    "main.js.map": "/mnist-digit-classifier-typescript/static/js/main.50c67af4.chunk.js.map",
+    "runtime-main.js": "/mnist-digit-classifier-typescript/static/js/runtime-main.b834a0b1.js",
+    "runtime-main.js.map": "/mnist-digit-classifier-typescript/static/js/runtime-main.b834a0b1.js.map",
+    "static/js/2.d050a2e0.chunk.js": "/mnist-digit-classifier-typescript/static/js/2.d050a2e0.chunk.js",
+    "static/js/2.d050a2e0.chunk.js.map": "/mnist-digit-classifier-typescript/static/js/2.d050a2e0.chunk.js.map",
+    "6586aa469a69db687a96.worker.js": "/mnist-digit-classifier-typescript/6586aa469a69db687a96.worker.js",
+    "6586aa469a69db687a96.worker.js.LICENSE.txt": "/mnist-digit-classifier-typescript/6586aa469a69db687a96.worker.js.LICENSE.txt",
+    "6586aa469a69db687a96.worker.js.map": "/mnist-digit-classifier-typescript/6586aa469a69db687a96.worker.js.map",
+    "b6cf119445366dff338d.worker.js": "/mnist-digit-classifier-typescript/b6cf119445366dff338d.worker.js",
+    "b6cf119445366dff338d.worker.js.LICENSE.txt": "/mnist-digit-classifier-typescript/b6cf119445366dff338d.worker.js.LICENSE.txt",
+    "b6cf119445366dff338d.worker.js.map": "/mnist-digit-classifier-typescript/b6cf119445366dff338d.worker.js.map",
+    "index.html": "/mnist-digit-classifier-typescript/index.html",
+    "precache-manifest.2750f8694b0ac86bcaee5d5c5be4c82d.js": "/mnist-digit-classifier-typescript/precache-manifest.2750f8694b0ac86bcaee5d5c5be4c82d.js",
+    "service-worker.js": "/mnist-digit-classifier-typescript/service-worker.js",
+    "static/css/main.7ff26fab.chunk.css.map": "/mnist-digit-classifier-typescript/static/css/main.7ff26fab.chunk.css.map",
+    "static/js/2.d050a2e0.chunk.js.LICENSE.txt": "/mnist-digit-classifier-typescript/static/js/2.d050a2e0.chunk.js.LICENSE.txt"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.b834a0b1.js",
+    "static/js/2.d050a2e0.chunk.js",
+    "static/css/main.7ff26fab.chunk.css",
+    "static/js/main.50c67af4.chunk.js"
+  ]
+}
