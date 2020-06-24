@@ -381,6 +381,7 @@ export default class App extends React.Component<{}, AppState> {
                 Upload your own image:{" "}
                 <input
                   type="file"
+                  accept="image/*"
                   ref={this.customImageInputRef}
                   onChange={this.onCustomImageInputChange}
                 />
@@ -397,7 +398,9 @@ export default class App extends React.Component<{}, AppState> {
       <div
         className="App"
         onMouseMove={this.onCropImageCanvasPointerMove}
+        onTouchMove={this.onCropImageCanvasPointerMove}
         onMouseUp={this.onCropImageCanvasPointerUp}
+        onTouchEnd={this.onCropImageCanvasPointerUp}
       >
         <h1>Crop image</h1>
 
@@ -423,6 +426,7 @@ export default class App extends React.Component<{}, AppState> {
               })
             }
             onMouseDown={this.onCropImageCanvasPointerDown}
+            onTouchStart={this.onCropImageCanvasPointerDown}
           ></canvas>
         </div>
 
