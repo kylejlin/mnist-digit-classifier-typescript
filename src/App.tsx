@@ -873,28 +873,26 @@ export default class App extends React.Component<{}, AppState> {
 
     const canvas = this.cropImageCanvasRef.current!;
     const { x, y } = getLocalPointerCoordinates(event, canvas);
+    const rect = canvas.getBoundingClientRect();
+    const scale = canvas.width / rect.width;
+    const localRadius = CropMenuConfig.GlobalCornerHandleRadius * scale;
 
     const optDragged: Option<Draggable> = (() => {
-      if (
-        Math.hypot(x - square.x, y - square.y) <=
-        CropMenuConfig.CornerHandleRadius
-      ) {
+      if (Math.hypot(x - square.x, y - square.y) <= localRadius) {
         return option.some(Draggable.TopLeftCorner);
       } else if (
-        Math.hypot(x - (square.x + square.size), y - square.y) <=
-        CropMenuConfig.CornerHandleRadius
+        Math.hypot(x - (square.x + square.size), y - square.y) <= localRadius
       ) {
         return option.some(Draggable.TopRightCorner);
       } else if (
         Math.hypot(
           x - (square.x + square.size),
           y - (square.y + square.size)
-        ) <= CropMenuConfig.CornerHandleRadius
+        ) <= localRadius
       ) {
         return option.some(Draggable.BottomRightCorner);
       } else if (
-        Math.hypot(x - square.x, y - (square.y + square.size)) <=
-        CropMenuConfig.CornerHandleRadius
+        Math.hypot(x - square.x, y - (square.y + square.size)) <= localRadius
       ) {
         return option.some(Draggable.BottomLeftCorner);
       } else if (
@@ -957,12 +955,16 @@ export default class App extends React.Component<{}, AppState> {
       },
 
       none: () => {
+        const rect = canvas.getBoundingClientRect();
+        const scale = canvas.width / rect.width;
+        const localRadius = CropMenuConfig.GlobalCornerHandleRadius * scale;
         this.saveState({
           ...state,
           hoveredOverDraggable: getHoveredOverDraggable(
             state.cropSquare,
             current.x,
-            current.y
+            current.y,
+            localRadius
           ),
         });
       },
@@ -1188,7 +1190,7 @@ const CropMenuConfig = {
 
   CropSquareColor: "#08b",
   CropSquareLineWidth: 3,
-  CornerHandleRadius: 10,
+  GlobalCornerHandleRadius: 10,
 } as const;
 
 function paintImageAndCropSquare(
@@ -1200,6 +1202,9 @@ function paintImageAndCropSquare(
 ): void {
   canvas.width = image.width;
   canvas.height = image.height;
+
+  const rect = canvas.getBoundingClientRect();
+  const scale = canvas.width / rect.width;
 
   const ctx = canvas.getContext("2d")!;
 
@@ -1251,9 +1256,10 @@ function paintImageAndCropSquare(
   }
 
   function drawCropSquareCircle(x: number, y: number): void {
+    const localRadius = CropMenuConfig.GlobalCornerHandleRadius * scale;
     ctx.moveTo(x, y);
     ctx.beginPath();
-    ctx.arc(x, y, CropMenuConfig.CornerHandleRadius, 0, 2 * Math.PI);
+    ctx.arc(x, y, localRadius, 0, 2 * Math.PI);
     ctx.closePath();
 
     ctx.fillStyle = CropMenuConfig.CropSquareColor;
@@ -1452,25 +1458,22 @@ function applyTranslation(square: Square, dx: number, dy: number): Square {
 function getHoveredOverDraggable(
   square: Square,
   x: number,
-  y: number
+  y: number,
+  localRadius: number
 ): Option<Draggable> {
-  if (
-    Math.hypot(x - square.x, y - square.y) <= CropMenuConfig.CornerHandleRadius
-  ) {
+  if (Math.hypot(x - square.x, y - square.y) <= localRadius) {
     return option.some(Draggable.TopLeftCorner);
   } else if (
-    Math.hypot(x - (square.x + square.size), y - square.y) <=
-    CropMenuConfig.CornerHandleRadius
+    Math.hypot(x - (square.x + square.size), y - square.y) <= localRadius
   ) {
     return option.some(Draggable.TopRightCorner);
   } else if (
     Math.hypot(x - (square.x + square.size), y - (square.y + square.size)) <=
-    CropMenuConfig.CornerHandleRadius
+    localRadius
   ) {
     return option.some(Draggable.BottomRightCorner);
   } else if (
-    Math.hypot(x - square.x, y - (square.y + square.size)) <=
-    CropMenuConfig.CornerHandleRadius
+    Math.hypot(x - square.x, y - (square.y + square.size)) <= localRadius
   ) {
     return option.some(Draggable.BottomLeftCorner);
   } else if (
