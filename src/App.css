@@ -18,6 +18,11 @@
   cursor: move;
 }
 
+.CropImageCanvas {
+  max-width: var(--minor-axis);
+  max-height: var(--minor-axis);
+}
+
 .WhiteBackground {
   background-color: white;
 }

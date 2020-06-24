@@ -409,7 +409,7 @@ export default class App extends React.Component<{}, AppState> {
           <canvas
             ref={this.cropImageCanvasRef}
             className={
-              "WhiteBackground" +
+              "CropImageCanvas WhiteBackground" +
               state.hoveredOverDraggable.match({
                 none: () => "",
                 some: (draggable): string => {
@@ -871,8 +871,8 @@ export default class App extends React.Component<{}, AppState> {
     const state = this.expectState(StateType.Crop);
     const square = state.cropSquare;
 
-    const rect = this.cropImageCanvasRef.current!.getBoundingClientRect();
-    const { x, y } = getLocalPointerCoordinates(event, rect);
+    const canvas = this.cropImageCanvasRef.current!;
+    const { x, y } = getLocalPointerCoordinates(event, canvas);
 
     const optDragged: Option<Draggable> = (() => {
       if (
@@ -926,8 +926,7 @@ export default class App extends React.Component<{}, AppState> {
   ): void {
     const state = this.expectState(StateType.Crop);
     const canvas = this.cropImageCanvasRef.current!;
-    const rect = canvas.getBoundingClientRect();
-    const current = getLocalPointerCoordinates(event, rect);
+    const current = getLocalPointerCoordinates(event, canvas);
 
     state.pendingCropAdjustment.match({
       some: (oldAdjustment) => {
@@ -1279,10 +1278,16 @@ function applyWhiteBackground(srcCtx: CanvasRenderingContext2D): void {
 
 function getLocalPointerCoordinates(
   event: React.MouseEvent | React.TouchEvent,
-  boundingRect: DOMRect
+  canvas: HTMLCanvasElement
 ): { x: number; y: number } {
+  const boundingRect = canvas.getBoundingClientRect();
   const { x, y } = getGlobalPointerCoordinates(event);
-  return { x: x - boundingRect.left, y: y - boundingRect.top };
+  const xScale = canvas.width / boundingRect.width;
+  const yScale = canvas.height / boundingRect.height;
+  return {
+    x: xScale * (x - boundingRect.left),
+    y: yScale * (y - boundingRect.top),
+  };
 }
 
 function getGlobalPointerCoordinates(
@@ -1647,6 +1652,10 @@ function getAverageDarkness(image: HTMLImageElement): number {
   canvas.height = image.height;
 
   const ctx = canvas.getContext("2d")!;
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
   ctx.drawImage(image, 0, 0);
 
   const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
