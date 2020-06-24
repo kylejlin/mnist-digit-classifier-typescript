@@ -16,7 +16,7 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/mnist-digit-classifier-typescript/b6cf119445366dff338d.worker.js.LICENSE.txt"
   },
   {
-    "revision": "0505c2d1e1050f0c311b6000738f46c8",
+    "revision": "fd8bf93b21bb546265d4234341f66ede",
     "url": "/mnist-digit-classifier-typescript/index.html"
   },
   {

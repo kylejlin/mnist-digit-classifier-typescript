@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 importScripts(
-  "/mnist-digit-classifier-typescript/precache-manifest.2750f8694b0ac86bcaee5d5c5be4c82d.js"
+  "/mnist-digit-classifier-typescript/precache-manifest.3e6a441f8354d3a0db4ba2e942068028.js"
 );
 
 self.addEventListener('message', (event) => {
