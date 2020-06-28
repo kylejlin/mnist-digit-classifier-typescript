@@ -1,5 +1,6 @@
 import { Matrix } from "./matrix";
-import { MatrixMap, Network, Network1 } from "./network";
+import { MatrixMap, Network } from "./network";
+import { networkFactory } from "./network/networkFactory";
 
 export function serializeNetwork(network: Network): ArrayBuffer {
   const entries = getEntries(network);
@@ -101,7 +102,7 @@ export function deserializeNetwork(buffer: ArrayBuffer): Network {
     }
   }
 
-  return Network1.fromWeightsAndBiases(weights, biases);
+  return networkFactory.fromWeightsAndBiases(weights, biases);
 }
 
 function toArray(floats: Float64Array): number[] {

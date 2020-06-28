@@ -1,40 +1,13 @@
-import { LabeledImage, VectorLabeledImage, AccuracyRate } from "./data";
-import { Matrix } from "./matrix";
-import { DeepReadonly } from "./deepReadonly";
-
-export interface Network {
-  readonly sizes: number[];
-
-  stochasticGradientDescent(
-    trainingData: VectorLabeledImage[],
-    hyperparams: StochasticGradientDescentHyperParameters,
-    evaluationData?: LabeledImage[]
-  ): void;
-
-  performForwardPass(inputColumnVector: Matrix): WeightedSumsAndActivations;
-
-  test(testData: LabeledImage[]): AccuracyRate;
-
-  getWeights(): DeepReadonly<MatrixMap>;
-
-  getBiases(): DeepReadonly<MatrixMap>;
-}
-
-export interface WeightedSumsAndActivations {
-  weightedSums: MatrixMap;
-  activations: MatrixMap;
-}
-
-export interface MatrixMap {
-  [layer: number]: Matrix;
-  length: number;
-}
-
-export interface StochasticGradientDescentHyperParameters {
-  batchSize: number;
-  epochs: number;
-  learningRate: number;
-}
+import {
+  MatrixMap,
+  Network,
+  StochasticGradientDescentHyperParameters,
+  WeightedSumsAndActivations,
+} from "..";
+import { AccuracyRate, LabeledImage, VectorLabeledImage } from "../../data";
+import { DeepReadonly } from "../../deepReadonly";
+import { Matrix } from "../../matrix";
+import { argmax, divideIntoMiniBatches, Gradients } from "../utils";
 
 export class Network1 implements Network {
   private layers: number;
@@ -236,40 +209,6 @@ export class Network1 implements Network {
   }
 }
 
-export interface Gradients {
-  weightGradients: MatrixMap;
-  biasGradients: MatrixMap;
-}
-
-function divideIntoMiniBatches(
-  trainingData: VectorLabeledImage[],
-  miniBatchSize: number
-): VectorLabeledImage[][] {
-  shuffle(trainingData);
-  const miniBatches: VectorLabeledImage[][] = [];
-  for (let i = 0; i < trainingData.length; i += miniBatchSize) {
-    miniBatches.push(trainingData.slice(i, i + miniBatchSize));
-  }
-  return miniBatches;
-}
-
-function shuffle(arr: unknown[]): void {
-  const SHUFFLE_TIMES = 512;
-
-  for (let n = 0; n < SHUFFLE_TIMES; n++) {
-    for (let i = arr.length - 1; i >= 1; i--) {
-      let j = randInt(i + 1);
-      const temp = arr[i];
-      arr[i] = arr[j];
-      arr[j] = temp;
-    }
-  }
-}
-
-function randInt(exclMax: number): number {
-  return Math.floor(Math.random() * exclMax);
-}
-
 function sigma(z: number): number {
   return 1 / (1 + Math.exp(-z));
 }
@@ -277,17 +216,4 @@ function sigma(z: number): number {
 function sigmaPrime(z: number): number {
   const sigmaZ = sigma(z);
   return sigmaZ * (1 - sigmaZ);
-}
-
-function argmax(arr: readonly number[]): number {
-  let maxIndex = 0;
-  let max = arr[maxIndex];
-  for (let i = 1; i < arr.length; i++) {
-    const value = arr[i];
-    if (value > max) {
-      max = value;
-      maxIndex = i;
-    }
-  }
-  return maxIndex;
 }

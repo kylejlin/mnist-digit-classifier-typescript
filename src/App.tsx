@@ -4,11 +4,7 @@ import "./App.css";
 import { AccuracyRate, LabeledImage } from "./data";
 import { MnistData, mnistProm } from "./data/mnist";
 import { Matrix } from "./matrix";
-import {
-  Network,
-  Network1,
-  StochasticGradientDescentHyperParameters,
-} from "./network";
+import { Network, StochasticGradientDescentHyperParameters } from "./network";
 import { testNetwork, trainNetwork } from "./networkServices";
 import {
   AppState,
@@ -29,6 +25,7 @@ import {
   ViewState,
 } from "./state";
 import { imageSaver, networkSaver } from "./stateSavers";
+import { networkFactory } from "./network/networkFactory";
 
 interface Rect {
   x: number;
@@ -605,7 +602,7 @@ export default class App extends React.Component<{}, AppState> {
 
         stateType: StateType.NetworkMainMenu,
 
-        network: new Network1(layerSizes),
+        network: networkFactory.fromSizes(layerSizes),
       };
 
       this.saveState(newState);
