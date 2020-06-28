@@ -159,11 +159,13 @@ export class Matrix {
 
     for (let thisR = 0; thisR < thisRows; thisR++) {
       for (let otherC = 0; otherC < otherColumns; otherC++) {
+        let dot = 0;
         for (let thisC = 0; thisC < thisColumns; thisC++) {
-          productData[thisR * productColumns + otherC] +=
+          dot +=
             thisData[thisR * thisColumns + thisC] *
             otherData[thisC * otherColumns + otherC];
         }
+        productData[thisR * productColumns + otherC] = dot;
       }
     }
     return product;
