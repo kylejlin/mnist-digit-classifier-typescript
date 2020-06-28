@@ -2,7 +2,41 @@ import { LabeledImage, VectorLabeledImage, AccuracyRate } from "./data";
 import { Matrix } from "./matrix";
 import { DeepReadonly } from "./deepReadonly";
 
-export class Network {
+export interface Network {
+  readonly sizes: number[];
+
+  stochasticGradientDescent(
+    trainingData: VectorLabeledImage[],
+    hyperparams: StochasticGradientDescentHyperParameters,
+    evaluationData?: LabeledImage[]
+  ): void;
+
+  performForwardPass(inputColumnVector: Matrix): WeightedSumsAndActivations;
+
+  test(testData: LabeledImage[]): AccuracyRate;
+
+  getWeights(): DeepReadonly<MatrixMap>;
+
+  getBiases(): DeepReadonly<MatrixMap>;
+}
+
+export interface WeightedSumsAndActivations {
+  weightedSums: MatrixMap;
+  activations: MatrixMap;
+}
+
+export interface MatrixMap {
+  [layer: number]: Matrix;
+  length: number;
+}
+
+export interface StochasticGradientDescentHyperParameters {
+  batchSize: number;
+  epochs: number;
+  learningRate: number;
+}
+
+export class Network1 implements Network {
   private layers: number;
   private weights: MatrixMap;
   private biases: MatrixMap;
@@ -16,7 +50,7 @@ export class Network {
       sizes.push(weights[i].rows);
     }
 
-    const network = new Network(sizes);
+    const network = new Network1(sizes);
 
     for (let i = 1; i < weights.length; i++) {
       network.weights[i] = weights[i];
@@ -52,13 +86,13 @@ export class Network {
 
   stochasticGradientDescent(
     trainingData: VectorLabeledImage[],
-    miniBatchSize: number,
-    epochs: number,
-    learningRate: number,
+    hyperparams: StochasticGradientDescentHyperParameters,
     testData?: LabeledImage[]
   ): void {
+    const { batchSize, epochs, learningRate } = hyperparams;
+
     for (let epoch = 0; epoch < epochs; epoch++) {
-      const miniBatches = divideIntoMiniBatches(trainingData, miniBatchSize);
+      const miniBatches = divideIntoMiniBatches(trainingData, batchSize);
       for (const miniBatch of miniBatches) {
         const { weightGradients, biasGradients } = this.getAverageGradients(
           miniBatch
@@ -202,19 +236,9 @@ export class Network {
   }
 }
 
-export interface MatrixMap {
-  [layer: number]: Matrix;
-  length: number;
-}
-
 export interface Gradients {
   weightGradients: MatrixMap;
   biasGradients: MatrixMap;
-}
-
-export interface WeightedSumsAndActivations {
-  weightedSums: MatrixMap;
-  activations: MatrixMap;
 }
 
 function divideIntoMiniBatches(

@@ -1,4 +1,5 @@
 import { AccuracyRate } from "./data";
+import { StochasticGradientDescentHyperParameters } from "./network";
 
 export enum WorkerMessageType {
   StartTrainingRequest,
@@ -23,12 +24,6 @@ export interface StartTrainingRequest {
 
   networkBuffer: ArrayBuffer;
   hyperParams: StochasticGradientDescentHyperParameters;
-}
-
-export interface StochasticGradientDescentHyperParameters {
-  batchSize: number;
-  epochs: number;
-  learningRate: number;
 }
 
 export interface TrainingEpochCompleteNotification {

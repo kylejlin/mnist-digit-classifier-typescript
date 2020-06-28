@@ -4,28 +4,31 @@ import "./App.css";
 import { AccuracyRate, LabeledImage } from "./data";
 import { MnistData, mnistProm } from "./data/mnist";
 import { Matrix } from "./matrix";
-import { Network } from "./network";
+import {
+  Network,
+  Network1,
+  StochasticGradientDescentHyperParameters,
+} from "./network";
 import { testNetwork, trainNetwork } from "./networkServices";
 import {
   AppState,
+  Corner,
   CreateNetworkState,
   CropState,
   CustomImage,
   Draggable,
   HyperParameterMenuState,
+  MnistLoadingErrorState,
   NetworkMainMenuState,
   Square,
+  SquareAdjustment,
   StateMap,
   StateType,
   TestState,
   TrainingInProgressState,
   ViewState,
-  SquareAdjustment,
-  Corner,
-  MnistLoadingErrorState,
 } from "./state";
 import { imageSaver, networkSaver } from "./stateSavers";
-import { StochasticGradientDescentHyperParameters } from "./workerMessages";
 
 interface Rect {
   x: number;
@@ -602,7 +605,7 @@ export default class App extends React.Component<{}, AppState> {
 
         stateType: StateType.NetworkMainMenu,
 
-        network: new Network(layerSizes),
+        network: new Network1(layerSizes),
       };
 
       this.saveState(newState);

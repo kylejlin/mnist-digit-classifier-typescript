@@ -1,12 +1,11 @@
 import { AccuracyRate, LabeledImage, VectorLabeledImage } from "../data";
 import { mnistProm } from "../data/mnist";
-import { Network } from "../network";
+import { Network, StochasticGradientDescentHyperParameters } from "../network";
 import { deserializeNetwork, serializeNetwork } from "../networkSerializer";
 import {
   NetworkTrainerNotification,
   NetworkTrainerRequest,
   StartTrainingRequest,
-  StochasticGradientDescentHyperParameters,
   TerminateTrainingResponse,
   TrainingEpochCompleteNotification,
   WorkerMessageType,
@@ -78,12 +77,10 @@ function startTraining(
   }
 
   function performEpoch(): void {
-    network.stochasticGradientDescent(
-      trainingData,
-      hyperParams.batchSize,
-      1,
-      hyperParams.learningRate
-    );
+    network.stochasticGradientDescent(trainingData, {
+      ...hyperParams,
+      epochs: 1,
+    });
 
     notifyListenersOfEpochCompletion(network.test(testData), epochsCompleted);
 

@@ -1,11 +1,10 @@
 import { AccuracyRate } from "./data";
-import { Network } from "./network";
+import { Network, StochasticGradientDescentHyperParameters } from "./network";
 import { deserializeNetwork, serializeNetwork } from "./networkSerializer";
 import {
   NetworkTrainerNotification,
   StartTestingRequest,
   StartTrainingRequest,
-  StochasticGradientDescentHyperParameters,
   TerminateTrainingRequest,
   TerminateTrainingResponse,
   TestCompleteNotification,
