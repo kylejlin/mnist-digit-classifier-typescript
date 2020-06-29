@@ -60,14 +60,15 @@ export class Matrix {
     return new Matrix(this.rows, this.columns, this.data.slice());
   }
 
-  mutMultiplyScalar(n: number): void {
+  mutMultiplyScalar(n: number): this {
     const size = this.data.length;
     for (let i = 0; i < size; i++) {
       this.data[i] *= n;
     }
+    return this;
   }
 
-  mutAdd(other: Matrix): void {
+  mutAdd(other: Matrix): this {
     if (!(other.rows === this.rows && other.columns === this.columns)) {
       throw new TypeError(
         "Cannot add a " +
@@ -86,9 +87,11 @@ export class Matrix {
     for (let i = 0; i < size; i++) {
       this.data[i] += other.data[i];
     }
+
+    return this;
   }
 
-  mutSubtract(other: Matrix): void {
+  mutSubtract(other: Matrix): this {
     if (!(other.rows === this.rows && other.columns === this.columns)) {
       throw new TypeError(
         "Cannot add a " +
@@ -107,6 +110,8 @@ export class Matrix {
     for (let i = 0; i < size; i++) {
       this.data[i] -= other.data[i];
     }
+
+    return this;
   }
 
   immutSubtract(other: Matrix): Matrix {
@@ -171,7 +176,7 @@ export class Matrix {
     return product;
   }
 
-  mutHadamard(other: Matrix): void {
+  mutHadamard(other: Matrix): this {
     if (!(other.rows === this.rows && other.columns === this.columns)) {
       throw new TypeError(
         "Cannot take the Hadamard product of a " +
@@ -190,6 +195,7 @@ export class Matrix {
     for (let i = 0; i < size; i++) {
       this.data[i] *= other.data[i];
     }
+    return this;
   }
 
   immutTranspose(): Matrix {

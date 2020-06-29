@@ -34,4 +34,5 @@ export interface StochasticGradientDescentHyperParameters {
   batchSize: number;
   epochs: number;
   learningRate: number;
+  regularizationRate: number;
 }

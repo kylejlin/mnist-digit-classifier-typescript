@@ -70,6 +70,9 @@ export default class App extends React.Component<{}, AppState> {
     this.onLearningRateInputValueChange = this.onLearningRateInputValueChange.bind(
       this
     );
+    this.onRegularizationRateInputValueChange = this.onRegularizationRateInputValueChange.bind(
+      this
+    );
     this.onStartTrainingClick = this.onStartTrainingClick.bind(this);
     this.onEpochComplete = this.onEpochComplete.bind(this);
     this.onTrainerTerminate = this.onTrainerTerminate.bind(this);
@@ -289,13 +292,28 @@ export default class App extends React.Component<{}, AppState> {
           />
         </label>
 
+        <label>
+          Regularization rate:{" "}
+          <input
+            type="text"
+            className={
+              isPositiveNumStr(state.regularizationRateInputValue)
+                ? ""
+                : "InvalidInput"
+            }
+            value={state.regularizationRateInputValue}
+            onChange={this.onRegularizationRateInputValueChange}
+          />
+        </label>
+
         <button
           onClick={this.onStartTrainingClick}
           disabled={
             !(
               isPositiveIntStr(state.batchSizeInputValue) &&
               isPositiveIntStr(state.epochsInputValue) &&
-              isPositiveNumStr(state.learningRateInputValue)
+              isPositiveNumStr(state.learningRateInputValue) &&
+              isPositiveNumStr(state.regularizationRateInputValue)
             )
           }
         >
@@ -633,7 +651,8 @@ export default class App extends React.Component<{}, AppState> {
 
       batchSizeInputValue: "10",
       epochsInputValue: "30",
-      learningRateInputValue: "3.0",
+      learningRateInputValue: "0.5",
+      regularizationRateInputValue: "5.0",
     };
     this.saveState(newState);
   }
@@ -739,6 +758,17 @@ export default class App extends React.Component<{}, AppState> {
     this.saveState(newState);
   }
 
+  onRegularizationRateInputValueChange(
+    event: React.ChangeEvent<HTMLInputElement>
+  ): void {
+    const state = this.expectState(StateType.HyperParameterMenu);
+    const newState: HyperParameterMenuState = {
+      ...state,
+      regularizationRateInputValue: event.target.value,
+    };
+    this.saveState(newState);
+  }
+
   onStartTrainingClick(): void {
     const state = this.expectState(StateType.HyperParameterMenu);
 
@@ -746,6 +776,7 @@ export default class App extends React.Component<{}, AppState> {
       batchSize: +state.batchSizeInputValue,
       epochs: +state.epochsInputValue,
       learningRate: +state.learningRateInputValue,
+      regularizationRate: +state.regularizationRateInputValue,
     };
 
     const networkTrainer = trainNetwork(state.network, hyperParams, {

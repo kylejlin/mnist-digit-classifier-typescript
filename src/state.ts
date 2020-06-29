@@ -66,6 +66,7 @@ export interface HyperParameterMenuState {
   batchSizeInputValue: string;
   epochsInputValue: string;
   learningRateInputValue: string;
+  regularizationRateInputValue: string;
 }
 
 export interface TrainingInProgressState {

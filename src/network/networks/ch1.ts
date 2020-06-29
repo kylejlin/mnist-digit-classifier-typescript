@@ -9,7 +9,8 @@ import { DeepReadonly } from "../../deepReadonly";
 import { Matrix } from "../../matrix";
 import { argmax, divideIntoMiniBatches, Gradients } from "../utils";
 
-export class Network1 implements Network {
+/** Quadratic cost, sigmoid activation */
+export class Chapter1Network implements Network {
   private layers: number;
   private weights: MatrixMap;
   private biases: MatrixMap;
@@ -23,7 +24,7 @@ export class Network1 implements Network {
       sizes.push(weights[i].rows);
     }
 
-    const network = new Network1(sizes);
+    const network = new Chapter1Network(sizes);
 
     for (let i = 1; i < weights.length; i++) {
       network.weights[i] = weights[i];
