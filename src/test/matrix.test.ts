@@ -6,13 +6,17 @@ test("Matrix.randomUniform", () => {
   const a = Matrix.randomUniform(6, 1);
   expect([a.rows, a.columns]).toEqual([6, 1]);
   expect(
-    a.rowMajorOrderEntries().every((entry) => -1 <= entry && entry < 1)
+    Array.from(a.rowMajorOrderEntries()).every(
+      (entry) => -1 <= entry && entry < 1
+    )
   ).toBe(true);
 
   const b = Matrix.randomUniform(2, 3);
   expect([b.rows, b.columns]).toEqual([2, 3]);
   expect(
-    b.rowMajorOrderEntries().every((entry) => -1 <= entry && entry < 1)
+    Array.from(b.rowMajorOrderEntries()).every(
+      (entry) => -1 <= entry && entry < 1
+    )
   ).toBe(true);
 });
 
@@ -324,7 +328,9 @@ test("Matrix.prototype.rowMajorOrderEntries", () => {
     [3, -4],
     [-5, -6],
   ]);
-  expect(a.rowMajorOrderEntries()).toEqual([-1, 2, 3, -4, -5, -6]);
+  expect(a.rowMajorOrderEntries()).toEqual(
+    Float64Array.from([-1, 2, 3, -4, -5, -6])
+  );
 });
 
 test("Matrix.prototype.immutApplyElementwise", () => {

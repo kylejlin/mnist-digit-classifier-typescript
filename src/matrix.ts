@@ -1,7 +1,7 @@
 export class Matrix {
   static randomUniform(rows: number, columns: number): Matrix {
     const size = rows * columns;
-    const data = new Array(size);
+    const data = new Float64Array(size);
     for (let i = 0; i < size; i++) {
       data[i] = Math.random() * 2 - 1;
     }
@@ -9,7 +9,7 @@ export class Matrix {
   }
 
   static zeros(rows: number, columns: number): Matrix {
-    const data = new Array(rows * columns).fill(0);
+    const data = new Float64Array(rows * columns);
     return new Matrix(rows, columns, data);
   }
 
@@ -31,7 +31,7 @@ export class Matrix {
   static fromRowMajorOrderEntries(
     rows: number,
     columns: number,
-    entries: number[]
+    entries: ArrayLike<number>
   ): Matrix {
     if (entries.length !== rows * columns) {
       throw new Error(
@@ -48,12 +48,12 @@ export class Matrix {
 
   public readonly rows: number;
   public readonly columns: number;
-  private data: number[];
+  private data: Float64Array;
 
-  private constructor(rows: number, columns: number, data: number[]) {
+  private constructor(rows: number, columns: number, data: ArrayLike<number>) {
     this.rows = rows;
     this.columns = columns;
-    this.data = data;
+    this.data = data instanceof Float64Array ? data : Float64Array.from(data);
   }
 
   clone(): Matrix {
@@ -210,7 +210,7 @@ export class Matrix {
     return transposed;
   }
 
-  rowMajorOrderEntries(): readonly number[] {
+  rowMajorOrderEntries(): ArrayLike<number> {
     return this.data;
   }
 
@@ -225,7 +225,7 @@ export class Matrix {
   }
 
   print(decimals: number): string {
-    const entries = this.rowMajorOrderEntries();
+    const entries = Array.from(this.rowMajorOrderEntries());
     const entryStrings = entries.map((entry) => entry.toFixed(decimals));
     const entryStringLengths = entryStrings.map((s) => s.length);
     const maxLength = Math.max(...entryStringLengths);

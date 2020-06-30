@@ -35,7 +35,7 @@ function randInt(exclMax: number): number {
   return Math.floor(Math.random() * exclMax);
 }
 
-export function argmax(arr: readonly number[]): number {
+export function argmax(arr: ArrayLike<number>): number {
   let maxIndex = 0;
   let max = arr[maxIndex];
   for (let i = 1; i < arr.length; i++) {
