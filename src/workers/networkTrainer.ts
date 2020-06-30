@@ -1,4 +1,9 @@
-import { AccuracyRate, LabeledImage, VectorLabeledImage } from "../data";
+import {
+  AccuracyRate,
+  LabeledImage,
+  VectorLabeledImage,
+  convertVectorToLabel,
+} from "../data";
 import { mnistProm } from "../data/mnist";
 import { Network, StochasticGradientDescentHyperParameters } from "../network";
 import { deserializeNetwork, serializeNetwork } from "../networkSerializer";
@@ -54,7 +59,12 @@ function startTrainingOnceMnistLoads(message: StartTrainingRequest): void {
   const network = deserializeNetwork(message.networkBuffer);
 
   mnistProm.then((mnist) => {
-    startTraining(network, message.hyperParams, mnist.training, mnist.test);
+    startTraining(
+      network,
+      message.hyperParams,
+      mnist.training.slice(0, 50000),
+      mnist.training.slice(50000).map(convertVectorToLabel)
+    );
   });
 }
 

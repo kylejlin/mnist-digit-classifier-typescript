@@ -162,3 +162,22 @@ export function convertLabelToVector(image: LabeledImage): VectorLabeledImage {
     outputs,
   };
 }
+
+export function convertVectorToLabel(image: VectorLabeledImage): LabeledImage {
+  return {
+    rows: image.rows,
+    columns: image.columns,
+    inputs: image.inputs,
+    label: getLabel(image),
+  };
+}
+
+function getLabel(image: VectorLabeledImage): number {
+  const entries = image.outputs.rowMajorOrderEntries();
+  for (let i = 0; i < entries.length; i++) {
+    if (entries[i] === 1) {
+      return i;
+    }
+  }
+  throw new Error("A VectorLabeledImage has an output vector without a 1.");
+}
