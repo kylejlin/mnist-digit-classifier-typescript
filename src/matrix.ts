@@ -115,6 +115,10 @@ export class Matrix {
   }
 
   immutSubtract(other: Matrix): Matrix {
+    return this.subtractInto(other, this.clone());
+  }
+
+  subtractInto(other: Matrix, out: Matrix): Matrix {
     if (!(other.rows === this.rows && other.columns === this.columns)) {
       throw new TypeError(
         "Cannot add a " +
@@ -129,15 +133,21 @@ export class Matrix {
       );
     }
 
-    const clone = this.clone();
-    const size = clone.data.length;
-    for (let i = 0; i < size; i++) {
-      clone.data[i] -= other.data[i];
+    const thisData = this.data;
+    const otherData = other.data;
+    const outData = out.data;
+    const outSize = outData.length;
+    for (let i = 0; i < outSize; i++) {
+      outData[i] = thisData[i] - otherData[i];
     }
-    return clone;
+    return out;
   }
 
   immutMultiply(other: Matrix): Matrix {
+    return this.multiplyInto(other, Matrix.zeros(this.rows, other.columns));
+  }
+
+  multiplyInto(other: Matrix, out: Matrix): Matrix {
     if (this.columns !== other.rows) {
       throw new TypeError(
         "Cannot multiply a " +
@@ -152,15 +162,31 @@ export class Matrix {
       );
     }
 
-    const product = Matrix.zeros(this.rows, other.columns);
+    if (!(this.rows === out.rows && other.columns === out.columns)) {
+      throw new TypeError(
+        "Cannot multiply a " +
+          this.rows +
+          "x" +
+          this.columns +
+          " matrix with a " +
+          other.rows +
+          "x" +
+          other.columns +
+          " matrix into a " +
+          out.rows +
+          "x" +
+          out.columns +
+          " matrix."
+      );
+    }
 
     const thisData = this.data;
     const otherData = other.data;
-    const productData = product.data;
+    const outData = out.data;
     const thisRows = this.rows;
     const otherColumns = other.columns;
     const thisColumns = this.columns;
-    const productColumns = product.columns;
+    const outColumns = out.columns;
 
     for (let thisR = 0; thisR < thisRows; thisR++) {
       for (let otherC = 0; otherC < otherColumns; otherC++) {
@@ -170,10 +196,10 @@ export class Matrix {
             thisData[thisR * thisColumns + thisC] *
             otherData[thisC * otherColumns + otherC];
         }
-        productData[thisR * productColumns + otherC] = dot;
+        outData[thisR * outColumns + otherC] = dot;
       }
     }
-    return product;
+    return out;
   }
 
   mutHadamard(other: Matrix): this {
@@ -199,15 +225,38 @@ export class Matrix {
   }
 
   immutTranspose(): Matrix {
-    const transposed = new Matrix(this.columns, this.rows, this.data.slice());
-    for (let r = 0; r < this.rows; r++) {
-      for (let c = 0; c < this.columns; c++) {
-        transposed.data[c * transposed.columns + r] = this.data[
-          r * this.columns + c
-        ];
+    return this.transposeInto(
+      new Matrix(this.columns, this.rows, new Float64Array(this.data.length))
+    );
+  }
+
+  transposeInto(out: Matrix): Matrix {
+    if (!(this.rows === out.columns && this.columns === out.rows)) {
+      throw new Error(
+        "Cannot transpose a " +
+          this.rows +
+          "x" +
+          this.columns +
+          " matrix into a " +
+          out.rows +
+          "x" +
+          out.columns +
+          " matrix."
+      );
+    }
+
+    const thisData = this.data;
+    const thisRows = this.rows;
+    const thisColumns = this.columns;
+    const outData = out.data;
+    const outColumns = out.columns;
+
+    for (let r = 0; r < thisRows; r++) {
+      for (let c = 0; c < thisColumns; c++) {
+        outData[c * outColumns + r] = thisData[r * thisColumns + c];
       }
     }
-    return transposed;
+    return out;
   }
 
   rowMajorOrderEntries(): ArrayLike<number> {
@@ -215,13 +264,41 @@ export class Matrix {
   }
 
   immutApplyElementwise(f: (entry: number) => number): Matrix {
-    const clone = this.clone();
-    const cloneData = clone.data;
-    const size = cloneData.length;
-    for (let i = 0; i < size; i++) {
-      cloneData[i] = f(cloneData[i]);
+    return this.applyElementwiseInto(f, this.clone());
+  }
+
+  applyElementwiseInto(f: (entry: number) => number, out: Matrix): Matrix {
+    if (!(this.rows === out.rows && this.columns === out.columns)) {
+      throw new TypeError(
+        "Cannot apply " +
+          f.name +
+          " elementwise on a " +
+          this.rows +
+          "x" +
+          this.columns +
+          " matrix into a " +
+          out.rows +
+          "x" +
+          out.columns +
+          " matrix. Matrices must have the same dimensions."
+      );
     }
-    return clone;
+
+    const thisData = this.data;
+    const outData = out.data;
+    const outSize = outData.length;
+    for (let i = 0; i < outSize; i++) {
+      outData[i] = f(thisData[i]);
+    }
+    return out;
+  }
+
+  setToZero(): void {
+    const thisData = this.data;
+    const thisSize = thisData.length;
+    for (let i = 0; i < thisSize; i++) {
+      thisData[i] = 0;
+    }
   }
 
   print(decimals: number): string {

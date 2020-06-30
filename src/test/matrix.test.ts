@@ -195,7 +195,7 @@ test("Matrix.prototype.mutSubtract", () => {
   );
 });
 
-test("Matrix.prototye.mutSubtract throws if RHS matrix has different dimensions", () => {
+test("Matrix.prototype.mutSubtract throws if RHS matrix has different dimensions", () => {
   const a = Matrix.fromRows([
     [-1, 2],
     [3, -4],
@@ -208,6 +208,86 @@ test("Matrix.prototye.mutSubtract throws if RHS matrix has different dimensions"
 
   expect(() => {
     a.mutSubtract(b);
+  }).toThrow();
+});
+
+test("Matrix.prototype.immutSubtract", () => {
+  const a = Matrix.fromRows([
+    [-1, 2],
+    [3, -4],
+    [-5, -6],
+  ]);
+  const b = a.immutSubtract(
+    Matrix.fromRows([
+      [7.3, -8],
+      [-9, 10.5],
+      [-11, 12],
+    ])
+  );
+
+  expectEquals(
+    b,
+    Matrix.fromRows([
+      [-1 - 7.3, 2 - -8],
+      [3 - -9, -4 - 10.5],
+      [-5 - -11, -6 - 12],
+    ])
+  );
+});
+
+test("Matrix.prototype.immutSubtract throws if RHS matrix has different dimensions", () => {
+  const a = Matrix.fromRows([
+    [-1, 2],
+    [3, -4],
+    [-5, -6],
+  ]);
+  const b = Matrix.fromRows([
+    [-1, 2, 3],
+    [-4, 5, 6],
+  ]);
+
+  expect(() => {
+    a.immutSubtract(b);
+  }).toThrow();
+});
+
+test("Matrix.prototype.subtractInto", () => {
+  const a = Matrix.fromRows([
+    [-1, 2],
+    [3, -4],
+    [-5, -6],
+  ]);
+  const subtrahend = Matrix.fromRows([
+    [7.3, -8],
+    [-9, 10.5],
+    [-11, 12],
+  ]);
+  const b = a.subtractInto(subtrahend, Matrix.zeros(a.rows, a.columns));
+  const c = a.subtractInto(subtrahend, a);
+  const expected = Matrix.fromRows([
+    [-1 - 7.3, 2 - -8],
+    [3 - -9, -4 - 10.5],
+    [-5 - -11, -6 - 12],
+  ]);
+
+  expectEquals(b, expected);
+  expectEquals(c, expected);
+  expect(c).toBe(a);
+});
+
+test("Matrix.prototype.subtractInto throws if RHS matrix has different dimensions", () => {
+  const a = Matrix.fromRows([
+    [-1, 2],
+    [3, -4],
+    [-5, -6],
+  ]);
+  const b = Matrix.fromRows([
+    [-1, 2, 3],
+    [-4, 5, 6],
+  ]);
+
+  expect(() => {
+    a.subtractInto(b, Matrix.zeros(a.rows, a.columns));
   }).toThrow();
 });
 
@@ -259,6 +339,95 @@ test("Matrix.prototype.immutMultiply throws if this.columns !== RHS.rows", () =>
 
   expect(() => {
     a.immutMultiply(b);
+  }).toThrow();
+});
+
+test("Matrix.prototype.multiplyInto", () => {
+  const a = Matrix.fromRows([
+    [-1, 2],
+    [3, -4],
+    [-5, -6],
+  ]);
+  const b = Matrix.fromRows([
+    [-7, 8, 9],
+    [-10, 11, 12],
+  ]);
+  const c = a.multiplyInto(b, Matrix.zeros(a.rows, b.columns));
+  const d = b.multiplyInto(a, Matrix.zeros(b.rows, a.columns));
+
+  expectEquals(
+    c,
+    Matrix.fromRows([
+      [-13, 14, 15],
+      [19, -20, -21],
+      [95, -106, -117],
+    ])
+  );
+
+  expectEquals(
+    d,
+    Matrix.fromRows([
+      [-14, -100],
+      [-17, -136],
+    ])
+  );
+});
+
+test("Matrix.prototype.multiplyInto throws if this.columns !== RHS.rows", () => {
+  const a = Matrix.fromRows([
+    [-1, 2],
+    [3, -4],
+    [-5, -6],
+  ]);
+
+  expect(() => {
+    a.multiplyInto(a, Matrix.zeros(a.rows, a.columns));
+  }).toThrow();
+
+  const b = Matrix.fromRows([
+    [-7, 8, 9],
+    [-10, 11, 12],
+    [-13, 14, 15],
+  ]);
+
+  expect(() => {
+    a.multiplyInto(b, Matrix.zeros(a.rows, b.columns));
+  }).toThrow();
+});
+
+test("Matrix.prototype.multiplyInto throws if either this.rows !== out.rows or other.columns !== out.columns", () => {
+  const a = Matrix.fromRows([
+    [-1, 2],
+    [3, -4],
+    [-5, -6],
+  ]);
+  const b = Matrix.fromRows([
+    [-7, 8, 9],
+    [-10, 11, 12],
+  ]);
+
+  expect(() => {
+    a.multiplyInto(b, Matrix.zeros(a.rows, a.columns));
+  }).toThrow();
+
+  expect(() => {
+    a.multiplyInto(b, Matrix.zeros(b.rows, b.columns));
+  }).toThrow();
+
+  expect(() => {
+    a.multiplyInto(b, Matrix.zeros(b.rows, a.columns));
+  }).toThrow();
+
+  expect(() => {
+    b.multiplyInto(a, Matrix.zeros(a.rows, a.columns));
+  }).toThrow();
+
+  expect(() => {
+    b.multiplyInto(a, Matrix.zeros(b.rows, b.columns));
+  }).toThrow();
+
+  expect(() => {
+    b.multiplyInto(a, Matrix.zeros(a.rows, b.columns));
   }).toThrow();
 });
 
@@ -322,6 +491,34 @@ test("Matrix.prototype.immutTranspose", () => {
   );
 });
 
+test("Matrix.prototype.transposeInto", () => {
+  const a = Matrix.fromRows([
+    [-1, 2],
+    [3, -4],
+    [-5, -6],
+  ]);
+  const aTrans = a.transposeInto(Matrix.zeros(a.columns, a.rows));
+  expectEquals(
+    aTrans,
+    Matrix.fromRows([
+      [-1, 3, -5],
+      [2, -4, -6],
+    ])
+  );
+});
+
+test("Matrix.prototype.transposeInto throws if either this.rows !== out.columns or this.columns !== out.rows", () => {
+  const a = Matrix.fromRows([
+    [-1, 2],
+    [3, -4],
+    [-5, -6],
+  ]);
+
+  expect(() => {
+    a.transposeInto(Matrix.zeros(a.rows, a.columns));
+  }).toThrow();
+});
+
 test("Matrix.prototype.rowMajorOrderEntries", () => {
   const a = Matrix.fromRows([
     [-1, 2],
@@ -351,6 +548,48 @@ test("Matrix.prototype.immutApplyElementwise", () => {
       [cube(-5), cube(-6)],
     ])
   );
+});
+
+test("Matrix.prototype.immutApplyElementwise", () => {
+  function cube(x: number): number {
+    return Math.pow(x, 3);
+  }
+
+  const a = Matrix.fromRows([
+    [-1, 2],
+    [3, -4],
+    [-5, -6],
+  ]);
+  const b = a.applyElementwiseInto(cube, Matrix.zeros(a.rows, a.columns));
+  const c = a.applyElementwiseInto(cube, a);
+  const expected = Matrix.fromRows([
+    [cube(-1), cube(2)],
+    [cube(3), cube(-4)],
+    [cube(-5), cube(-6)],
+  ]);
+
+  expectEquals(b, expected);
+
+  expectEquals(c, expected);
+
+  expect(c).toBe(a);
+});
+
+test("Matrix.prototype.immutApplyElementwise throws if the out matrix has different dimensions", () => {
+  function cube(x: number): number {
+    return Math.pow(x, 3);
+  }
+
+  const a = Matrix.fromRows([
+    [-1, 2],
+    [3, -4],
+    [-5, -6],
+  ]);
+  const b = a.immutTranspose();
+
+  expect(() => {
+    a.applyElementwiseInto(cube, b);
+  }).toThrow();
 });
 
 function expectEquals(a: Matrix, b: Matrix): void {
