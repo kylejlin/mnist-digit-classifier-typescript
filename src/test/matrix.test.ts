@@ -678,6 +678,17 @@ test("Matrix.prototype.copyInto throws if out matrix has different dimensions", 
   }).toThrow();
 });
 
+test("Matrix.prototype.setToZero", () => {
+  const a = Matrix.fromRows([
+    [1, -2],
+    [3.5, 4.2],
+    [5, 6],
+  ]);
+  a.setToZero();
+
+  expectEquals(a, Matrix.zeros(3, 2));
+});
+
 function expectEquals(a: Matrix, b: Matrix): void {
   expect(a.print(DECIMALS)).toBe(b.print(DECIMALS));
 }
