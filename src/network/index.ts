@@ -3,7 +3,7 @@ import { Matrix } from "../matrix";
 import { DeepReadonly } from "../deepReadonly";
 
 export interface Network {
-  readonly sizes: number[];
+  readonly layerSizes: number[];
 
   stochasticGradientDescent(
     trainingData: VectorLabeledImage[],
@@ -25,6 +25,12 @@ export interface WeightedSumsAndActivations {
   activations: MatrixMap;
 }
 
+/**
+ * `MatrixMap` differs from `ArrayLike<Matrix>` in that
+ * indices start at `1`. Because the input layer (layer
+ * `0`) does not have a weight matrix or bias matrix,
+ * `MatrixMap[0]` will be undefined.
+ */
 export interface MatrixMap {
   [layer: number]: Matrix;
   length: number;

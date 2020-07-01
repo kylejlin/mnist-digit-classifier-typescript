@@ -20,6 +20,23 @@ test("Matrix.randomUniform", () => {
   ).toBe(true);
 });
 
+test("Matrix.fromEntryInitializer", () => {
+  const a = Matrix.fromEntryInitializer(6, 1, () => -4.2);
+  expectEquals(
+    a,
+    Matrix.fromRows([[-4.2], [-4.2], [-4.2], [-4.2], [-4.2], [-4.2]])
+  );
+
+  const b = Matrix.fromEntryInitializer(2, 3, () => 9);
+  expectEquals(
+    b,
+    Matrix.fromRows([
+      [9, 9, 9],
+      [9, 9, 9],
+    ])
+  );
+});
+
 test("Matrix.zeros", () => {
   expect(Matrix.zeros(6, 1).print(DECIMALS)).toMatchSnapshot();
   expect(Matrix.zeros(2, 3).print(DECIMALS)).toMatchSnapshot();
@@ -129,6 +146,45 @@ test("Matrix.prototype.mutMultiplyScalar", () => {
       [-5 * -0.3, -6 * -0.3],
     ])
   );
+});
+
+test("Matrix.prototype.multiplyScalarInto", () => {
+  const a = Matrix.fromRows([
+    [-1, 2],
+    [3, -4],
+    [-5, -6],
+  ]);
+  const b = a.multiplyScalarInto(-7.3, Matrix.zeros(a.rows, a.columns));
+  const c = a.multiplyScalarInto(-7.3, a);
+  const expected = Matrix.fromRows([
+    [-1 * -7.3, 2 * -7.3],
+    [3 * -7.3, -4 * -7.3],
+    [-5 * -7.3, -6 * -7.3],
+  ]);
+
+  expectEquals(b, expected);
+  expectEquals(c, expected);
+  expect(c).toBe(a);
+});
+
+test("Matrix.prototype.multiplyScalarInto throws if out matrix has different dimensions", () => {
+  const a = Matrix.fromRows([
+    [-1, 2],
+    [3, -4],
+    [-5, -6],
+  ]);
+
+  expect(() => {
+    a.multiplyScalarInto(-7.3, Matrix.zeros(a.rows, a.rows));
+  }).toThrow();
+
+  expect(() => {
+    a.multiplyScalarInto(-7.3, Matrix.zeros(a.columns, a.columns));
+  }).toThrow();
+
+  expect(() => {
+    a.multiplyScalarInto(-7.3, Matrix.zeros(a.columns, a.rows));
+  }).toThrow();
 });
 
 test("Matrix.prototype.mutAdd", () => {
@@ -550,7 +606,7 @@ test("Matrix.prototype.immutApplyElementwise", () => {
   );
 });
 
-test("Matrix.prototype.immutApplyElementwise", () => {
+test("Matrix.prototype.applyElementwiseInto", () => {
   function cube(x: number): number {
     return Math.pow(x, 3);
   }
@@ -575,7 +631,7 @@ test("Matrix.prototype.immutApplyElementwise", () => {
   expect(c).toBe(a);
 });
 
-test("Matrix.prototype.immutApplyElementwise throws if the out matrix has different dimensions", () => {
+test("Matrix.prototype.applyElementwiseInto throws if the out matrix has different dimensions", () => {
   function cube(x: number): number {
     return Math.pow(x, 3);
   }
@@ -589,6 +645,36 @@ test("Matrix.prototype.immutApplyElementwise throws if the out matrix has differ
 
   expect(() => {
     a.applyElementwiseInto(cube, b);
+  }).toThrow();
+});
+
+test("Matrix.prototype.copyInto", () => {
+  const a = Matrix.fromRows([
+    [1, -2],
+    [3.5, 4.2],
+    [5, 6],
+  ]);
+  const b = a.copyInto(Matrix.zeros(a.rows, a.columns));
+  expectEquals(a, b);
+});
+
+test("Matrix.prototype.copyInto throws if out matrix has different dimensions", () => {
+  const a = Matrix.fromRows([
+    [1, -2],
+    [3.5, 4.2],
+    [5, 6],
+  ]);
+
+  expect(() => {
+    a.copyInto(Matrix.zeros(a.rows, a.rows));
+  }).toThrow();
+
+  expect(() => {
+    a.copyInto(Matrix.zeros(a.columns, a.columns));
+  }).toThrow();
+
+  expect(() => {
+    a.copyInto(Matrix.zeros(a.columns, a.rows));
   }).toThrow();
 });
 

@@ -1,10 +1,20 @@
 export class Matrix {
+  /** @deprecated Use `Matrix.fromEntryInitializer(rows, columns, uniformRng)` instead. */
   static randomUniform(rows: number, columns: number): Matrix {
     const size = rows * columns;
     const data = new Float64Array(size);
     for (let i = 0; i < size; i++) {
       data[i] = Math.random() * 2 - 1;
     }
+    return new Matrix(rows, columns, data);
+  }
+
+  static fromEntryInitializer(
+    rows: number,
+    columns: number,
+    initializer: () => number
+  ) {
+    const data = new Float64Array(rows * columns).map(initializer);
     return new Matrix(rows, columns, data);
   }
 
@@ -66,6 +76,32 @@ export class Matrix {
       this.data[i] *= n;
     }
     return this;
+  }
+
+  multiplyScalarInto(n: number, out: Matrix): Matrix {
+    if (!(this.rows === out.rows && this.columns === out.columns)) {
+      throw new Error(
+        "Cannot multiply a scalar " +
+          n +
+          " by a " +
+          this.rows +
+          "x" +
+          this.columns +
+          " matrix into a " +
+          out.rows +
+          "x" +
+          out.columns +
+          " matrix. The out matrix must have the same dimensions as this matrix."
+      );
+    }
+
+    const thisData = this.data;
+    const outData = out.data;
+    const outSize = outData.length;
+    for (let i = 0; i < outSize; i++) {
+      outData[i] = n * thisData[i];
+    }
+    return out;
   }
 
   mutAdd(other: Matrix): this {
@@ -289,6 +325,30 @@ export class Matrix {
     const outSize = outData.length;
     for (let i = 0; i < outSize; i++) {
       outData[i] = f(thisData[i]);
+    }
+    return out;
+  }
+
+  copyInto(out: Matrix): Matrix {
+    if (!(this.rows === out.rows && this.columns === out.columns)) {
+      throw new Error(
+        "Cannot copy a " +
+          this.rows +
+          "x" +
+          this.columns +
+          " matrix into a " +
+          out.rows +
+          "x" +
+          out.columns +
+          " matrix."
+      );
+    }
+
+    const thisData = this.data;
+    const outData = out.data;
+    const outSize = outData.length;
+    for (let i = 0; i < outSize; i++) {
+      outData[i] = thisData[i];
     }
     return out;
   }

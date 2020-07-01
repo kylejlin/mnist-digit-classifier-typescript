@@ -11,51 +11,134 @@ import { argmax, divideIntoMiniBatches, Gradients } from "../utils";
 
 /** Cross-entropy cost, sigmoid activation, L2 regularization */
 export class Chapter3CrossEntropyL2Network implements Network {
-  private layers: number;
+  private numberOfLayers: number;
   private weights: MatrixMap;
   private biases: MatrixMap;
   private log: (accuracyRate: AccuracyRate, epoch: number) => void;
 
-  public readonly sizes: number[];
+  private temp_totalWeightGradients: MatrixMap;
+  private temp_totalBiasGradients: MatrixMap;
+
+  private temp_weightedSums: MatrixMap;
+  private temp_activations: MatrixMap;
+
+  private temp_errors: MatrixMap;
+  private temp_weightGradients: MatrixMap;
+  private temp_biasGradients: MatrixMap;
+  private temp_transposedActivations: MatrixMap;
+  private temp_weightCosts: MatrixMap;
+  private temp_transposedWeights: MatrixMap;
+  private temp_sigmaPrimeOfWeightedSums: MatrixMap;
+
+  public readonly layerSizes: number[];
 
   static fromWeightsAndBiases(weights: MatrixMap, biases: MatrixMap): Network {
-    const sizes = [weights[1].columns];
-    for (let i = 1; i < weights.length; i++) {
-      sizes.push(weights[i].rows);
-    }
-
-    const network = new Chapter3CrossEntropyL2Network(sizes);
-
-    for (let i = 1; i < weights.length; i++) {
-      network.weights[i] = weights[i];
-      network.biases[i] = biases[i];
-    }
-
-    return network;
+    return new Chapter3CrossEntropyL2Network(weights, biases);
   }
 
-  constructor(
-    sizes: number[],
+  static fromEntryInitializer(
+    layerSizes: number[],
+    entryInitializer: () => number,
     log?: (accuracyRate: AccuracyRate, epoch: number) => void
-  ) {
-    this.layers = sizes.length;
+  ): Network {
+    const numberOfLayers = layerSizes.length;
 
-    this.weights = [];
-    this.biases = [];
-    for (let outputLayer = 1; outputLayer < sizes.length; outputLayer++) {
+    const weights: MatrixMap = new Array(numberOfLayers);
+    const biases: MatrixMap = new Array(numberOfLayers);
+    for (let outputLayer = 1; outputLayer < numberOfLayers; outputLayer++) {
       const inputLayer = outputLayer - 1;
-      const outputLayerSize = sizes[outputLayer];
-      const inputLayerSize = sizes[inputLayer];
-      this.weights[outputLayer] = Matrix.randomUniform(
+      const outputLayerSize = layerSizes[outputLayer];
+      const inputLayerSize = layerSizes[inputLayer];
+      weights[outputLayer] = Matrix.fromEntryInitializer(
         outputLayerSize,
-        inputLayerSize
+        inputLayerSize,
+        entryInitializer
       );
-      this.biases[outputLayer] = Matrix.randomUniform(outputLayerSize, 1);
+      biases[outputLayer] = Matrix.fromEntryInitializer(
+        outputLayerSize,
+        1,
+        entryInitializer
+      );
     }
 
+    return new Chapter3CrossEntropyL2Network(weights, biases, log);
+  }
+
+  private constructor(
+    weights: MatrixMap,
+    biases: MatrixMap,
+    log?: (accuracyRate: AccuracyRate, epoch: number) => void
+  ) {
+    const layerSizes = [weights[1].columns];
+    for (let i = 1; i < weights.length; i++) {
+      layerSizes.push(weights[i].rows);
+    }
+
+    this.layerSizes = layerSizes;
+    this.numberOfLayers = layerSizes.length;
+    this.weights = weights;
+    this.biases = biases;
     this.log = log || (() => {});
 
-    this.sizes = sizes;
+    this.temp_totalWeightGradients = getZeroMatrixMap(weights);
+    this.temp_totalBiasGradients = getZeroMatrixMap(biases);
+
+    {
+      const weightedSums = [];
+      const activations = [Matrix.zeros(weights[1].columns, 1)];
+
+      for (
+        let outputLayer = 1;
+        outputLayer < this.numberOfLayers;
+        outputLayer++
+      ) {
+        weightedSums[outputLayer] = Matrix.zeros(weights[outputLayer].rows, 1);
+        activations[outputLayer] = Matrix.zeros(weights[outputLayer].rows, 1);
+      }
+
+      this.temp_weightedSums = weightedSums;
+      this.temp_activations = activations;
+    }
+
+    this.temp_errors = getZeroMatrixMap(this.temp_weightedSums);
+    this.temp_weightGradients = getZeroMatrixMap(weights);
+    this.temp_biasGradients = getZeroMatrixMap(biases);
+
+    {
+      const activations = this.temp_activations;
+      const transposedActivations: MatrixMap = new Array(activations.length);
+
+      for (
+        let outputLayer = 0;
+        outputLayer < activations.length;
+        outputLayer++
+      ) {
+        transposedActivations[outputLayer] = Matrix.zeros(
+          activations[outputLayer].columns,
+          activations[outputLayer].rows
+        );
+      }
+
+      this.temp_transposedActivations = transposedActivations;
+    }
+
+    this.temp_weightCosts = getZeroMatrixMap(this.temp_weightGradients);
+
+    {
+      const { weights } = this;
+      const transposedWeights: MatrixMap = new Array(weights.length);
+      for (let i = 1; i < weights.length; i++) {
+        transposedWeights[i] = Matrix.zeros(
+          weights[i].columns,
+          weights[i].rows
+        );
+      }
+      this.temp_transposedWeights = transposedWeights;
+    }
+
+    this.temp_sigmaPrimeOfWeightedSums = getZeroMatrixMap(
+      this.temp_weightedSums
+    );
   }
 
   stochasticGradientDescent(
@@ -69,15 +152,15 @@ export class Chapter3CrossEntropyL2Network implements Network {
     for (let epoch = 0; epoch < epochs; epoch++) {
       const miniBatches = divideIntoMiniBatches(trainingData, batchSize);
       for (const miniBatch of miniBatches) {
-        const { weightGradients, biasGradients } = this.getAverageGradients(
+        const { weightGradients, biasGradients } = this.getTotalGradients(
           miniBatch,
           hyperParams.regularizationRate,
           trainingDataSize
         );
 
-        for (let i = 1; i < this.layers; i++) {
-          weightGradients[i].mutMultiplyScalar(learningRate);
-          biasGradients[i].mutMultiplyScalar(learningRate);
+        for (let i = 1; i < this.numberOfLayers; i++) {
+          weightGradients[i].mutMultiplyScalar(learningRate / miniBatch.length);
+          biasGradients[i].mutMultiplyScalar(learningRate / miniBatch.length);
 
           this.weights[i].mutSubtract(weightGradients[i]);
           this.biases[i].mutSubtract(biasGradients[i]);
@@ -91,50 +174,43 @@ export class Chapter3CrossEntropyL2Network implements Network {
     }
   }
 
-  private getAverageGradients(
+  private getTotalGradients(
     miniBatch: VectorLabeledImage[],
     regularizationRate: number,
     trainingDataSize: number
   ): Gradients {
-    const weightGradients = this.getZeroMatricesForWeightGradients();
-    const biasGradients = this.getZeroMatricesForBiasGradients();
+    const {
+      weightGradients: totalWeightGradients,
+      biasGradients: totalBiasGradients,
+    } = this.resetTotalGradientTemps();
 
     for (const image of miniBatch) {
-      const imageGradients = this.getGradients(
+      const { weightGradients, biasGradients } = this.getGradients(
         image,
         regularizationRate,
         trainingDataSize
       );
-      for (let i = 1; i < this.layers; i++) {
-        weightGradients[i].mutAdd(imageGradients.weightGradients[i]);
-        biasGradients[i].mutAdd(imageGradients.biasGradients[i]);
+      for (let i = 1; i < this.numberOfLayers; i++) {
+        totalWeightGradients[i].mutAdd(weightGradients[i]);
+        totalBiasGradients[i].mutAdd(biasGradients[i]);
       }
     }
 
-    for (let i = 1; i < this.layers; i++) {
-      weightGradients[i].mutMultiplyScalar(1 / miniBatch.length);
-      biasGradients[i].mutMultiplyScalar(1 / miniBatch.length);
-    }
+    return {
+      weightGradients: totalWeightGradients,
+      biasGradients: totalBiasGradients,
+    };
+  }
 
+  private resetTotalGradientTemps(): Gradients {
+    const numberOfLayers = this.layerSizes.length;
+    const weightGradients = this.temp_totalWeightGradients;
+    const biasGradients = this.temp_totalBiasGradients;
+    for (let i = 1; i < numberOfLayers; i++) {
+      weightGradients[i].setToZero();
+      biasGradients[i].setToZero();
+    }
     return { weightGradients, biasGradients };
-  }
-
-  private getZeroMatricesForWeightGradients(): MatrixMap {
-    const matrices: MatrixMap = [];
-    for (let i = 1; i < this.layers; i++) {
-      const weightMatrix = this.weights[i];
-      matrices[i] = Matrix.zeros(weightMatrix.rows, weightMatrix.columns);
-    }
-    return matrices;
-  }
-
-  private getZeroMatricesForBiasGradients(): MatrixMap {
-    const matrices: MatrixMap = [];
-    for (let i = 1; i < this.layers; i++) {
-      const biasMatrix = this.biases[i];
-      matrices[i] = Matrix.zeros(biasMatrix.rows, biasMatrix.columns);
-    }
-    return matrices;
   }
 
   private getGradients(
@@ -142,68 +218,83 @@ export class Chapter3CrossEntropyL2Network implements Network {
     regularizationRate: number,
     trainingDataSize: number
   ): Gradients {
-    const { weightedSums, activations } = this.performForwardPass(image.inputs);
-    const errors: MatrixMap = [];
-    const weightGradients: MatrixMap = [];
-    const biasGradients: MatrixMap = [];
+    const { numberOfLayers } = this;
 
-    const lastLayerError = this.getLastLayerError(
-      activations[this.layers - 1],
-      image.outputs
+    const { weightedSums, activations } = this.performForwardPass(image.inputs);
+    const errors = this.temp_errors;
+    const weightGradients = this.temp_weightGradients;
+    const biasGradients = this.temp_biasGradients;
+
+    const lastLayerError = activations[this.numberOfLayers - 1].subtractInto(
+      image.outputs,
+      errors[numberOfLayers - 1]
     );
 
-    errors[this.layers - 1] = lastLayerError;
-    weightGradients[this.layers - 1] = lastLayerError
-      .immutMultiply(activations[this.layers - 2].immutTranspose())
+    lastLayerError
+      .multiplyInto(
+        activations[numberOfLayers - 2].transposeInto(
+          this.temp_transposedActivations[numberOfLayers - 2]
+        ),
+        weightGradients[numberOfLayers - 1]
+      )
       .mutAdd(
-        this.weights[this.layers - 1]
-          .clone()
-          .mutMultiplyScalar(regularizationRate / trainingDataSize)
+        this.weights[numberOfLayers - 1].multiplyScalarInto(
+          regularizationRate / trainingDataSize,
+          this.temp_weightCosts[numberOfLayers - 1]
+        )
       );
 
-    biasGradients[this.layers - 1] = lastLayerError;
+    lastLayerError.copyInto(biasGradients[numberOfLayers - 1]);
 
-    for (let i = this.layers - 2; i >= 1; i--) {
+    for (let i = this.numberOfLayers - 2; i >= 1; i--) {
       const error = this.weights[i + 1]
-        .immutTranspose()
-        .immutMultiply(errors[i + 1]);
-      error.mutHadamard(weightedSums[i].immutApplyElementwise(sigmaPrime));
-
-      errors[i] = error;
-      weightGradients[i] = error
-        .immutMultiply(activations[i - 1].immutTranspose())
-        .mutAdd(
-          this.weights[i]
-            .clone()
-            .mutMultiplyScalar(regularizationRate / trainingDataSize)
+        .transposeInto(this.temp_transposedWeights[i + 1])
+        .multiplyInto(errors[i + 1], errors[i])
+        .mutHadamard(
+          weightedSums[i].applyElementwiseInto(
+            sigmaPrime,
+            this.temp_sigmaPrimeOfWeightedSums[i]
+          )
         );
-      biasGradients[i] = error;
+
+      error
+        .multiplyInto(
+          activations[i - 1].transposeInto(
+            this.temp_transposedActivations[i - 1]
+          ),
+          weightGradients[i]
+        )
+        .mutAdd(
+          this.weights[i].multiplyScalarInto(
+            regularizationRate / trainingDataSize,
+            this.temp_weightCosts[i]
+          )
+        );
+
+      error.copyInto(biasGradients[i]);
     }
 
     return { weightGradients, biasGradients };
   }
 
   performForwardPass(inputs: Matrix): WeightedSumsAndActivations {
-    const weightedSums: MatrixMap = [];
-    const activations: MatrixMap = [inputs];
+    const weightedSums = this.temp_weightedSums;
+    const activations = this.temp_activations;
 
-    for (let outputLayer = 1; outputLayer < this.layers; outputLayer++) {
+    activations[0] = inputs;
+
+    for (
+      let outputLayer = 1;
+      outputLayer < this.numberOfLayers;
+      outputLayer++
+    ) {
       const inputLayer = outputLayer - 1;
-      const weightedSum = this.weights[outputLayer].immutMultiply(
-        activations[inputLayer]
-      );
-      weightedSum.mutAdd(this.biases[outputLayer]);
-      weightedSums[outputLayer] = weightedSum;
-      activations[outputLayer] = weightedSum.immutApplyElementwise(sigma);
+      const weightedSum = this.weights[outputLayer]
+        .multiplyInto(activations[inputLayer], weightedSums[outputLayer])
+        .mutAdd(this.biases[outputLayer]);
+      weightedSum.applyElementwiseInto(sigma, activations[outputLayer]);
     }
     return { weightedSums, activations };
-  }
-
-  private getLastLayerError(
-    actualOutput: Matrix,
-    expectedOutput: Matrix
-  ): Matrix {
-    return actualOutput.immutSubtract(expectedOutput);
   }
 
   test(testData: LabeledImage[]): AccuracyRate {
@@ -211,7 +302,7 @@ export class Chapter3CrossEntropyL2Network implements Network {
     for (const image of testData) {
       const { activations } = this.performForwardPass(image.inputs);
       const prediction = argmax(
-        activations[this.layers - 1].rowMajorOrderEntries()
+        activations[this.numberOfLayers - 1].rowMajorOrderEntries()
       );
       if (prediction === image.label) {
         correctClassifications++;
@@ -236,4 +327,13 @@ function sigma(z: number): number {
 function sigmaPrime(z: number): number {
   const sigmaZ = sigma(z);
   return sigmaZ * (1 - sigmaZ);
+}
+
+function getZeroMatrixMap(map: MatrixMap): MatrixMap {
+  const zeroMatrices: MatrixMap = [];
+  for (let i = 1; i < map.length; i++) {
+    const matrix = map[i];
+    zeroMatrices[i] = Matrix.zeros(matrix.rows, matrix.columns);
+  }
+  return zeroMatrices;
 }

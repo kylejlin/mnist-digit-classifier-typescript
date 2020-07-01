@@ -16,7 +16,7 @@ export class Chapter1Network implements Network {
   private biases: MatrixMap;
   private log: (accuracyRate: AccuracyRate, epoch: number) => void;
 
-  public readonly sizes: number[];
+  public readonly layerSizes: number[];
 
   static fromWeightsAndBiases(weights: MatrixMap, biases: MatrixMap): Network {
     const sizes = [weights[1].columns];
@@ -55,7 +55,7 @@ export class Chapter1Network implements Network {
 
     this.log = log || (() => {});
 
-    this.sizes = sizes;
+    this.layerSizes = sizes;
   }
 
   stochasticGradientDescent(

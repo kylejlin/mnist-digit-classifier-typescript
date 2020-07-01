@@ -6,7 +6,7 @@ export function serializeNetwork(network: Network): ArrayBuffer {
   const entries = getEntries(network);
 
   const numberOfBytesForSizes =
-    (1 + network.sizes.length) * Uint32Array.BYTES_PER_ELEMENT;
+    (1 + network.layerSizes.length) * Uint32Array.BYTES_PER_ELEMENT;
 
   const buffer = new ArrayBuffer(
     numberOfBytesForSizes + entries.length * entries.BYTES_PER_ELEMENT
@@ -18,10 +18,10 @@ export function serializeNetwork(network: Network): ArrayBuffer {
     numberOfBytesForSizes / Uint32Array.BYTES_PER_ELEMENT
   );
 
-  uints[0] = network.sizes.length;
+  uints[0] = network.layerSizes.length;
 
-  for (let i = 0; i < network.sizes.length; i++) {
-    uints[1 + i] = network.sizes[i];
+  for (let i = 0; i < network.layerSizes.length; i++) {
+    uints[1 + i] = network.layerSizes[i];
   }
 
   const floats = new Float64Array(buffer, numberOfBytesForSizes);

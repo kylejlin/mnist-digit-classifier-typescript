@@ -235,7 +235,7 @@ export default class App extends React.Component<{}, AppState> {
     return (
       <div className="App">
         <h1>Explore your neural network</h1>
-        <h2>Neurons in each layer: {state.network.sizes.join(", ")}</h2>
+        <h2>Neurons in each layer: {state.network.layerSizes.join(", ")}</h2>
 
         <button onClick={this.onTrainClick}>Train</button>
         <button onClick={this.onTestClick}>Test</button>

@@ -1,4 +1,5 @@
 import { MatrixMap, Network } from ".";
+import { uniformRandom } from "../random";
 import { Chapter3CrossEntropyL2Network } from "./networks/ch3crossEntropyL2";
 
 export interface NetworkFactory {
@@ -20,7 +21,10 @@ export interface NetworkFactory {
  */
 export const networkFactory: NetworkFactory = {
   fromSizes(sizes: number[]): Network {
-    return new Chapter3CrossEntropyL2Network(sizes);
+    return Chapter3CrossEntropyL2Network.fromEntryInitializer(
+      sizes,
+      uniformRandom
+    );
   },
   fromWeightsAndBiases(weights: MatrixMap, biases: MatrixMap): Network {
     return Chapter3CrossEntropyL2Network.fromWeightsAndBiases(weights, biases);
