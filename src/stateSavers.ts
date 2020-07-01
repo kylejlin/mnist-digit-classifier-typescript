@@ -121,9 +121,26 @@ function encodeBytes(bytes: Uint8Array): string {
     }
   }
 
-  return String.fromCharCode(
-    numberOfBytes >>> 16,
-    numberOfBytes & 0b0000_0000_0000_0000_1111_1111_1111_1111,
-    ...u16s
+  return (
+    String.fromCharCode(
+      numberOfBytes >>> 16,
+      numberOfBytes & 0b0000_0000_0000_0000_1111_1111_1111_1111
+    ) + stringifyU16s(u16s)
   );
+}
+
+function stringifyU16s(u16s: number[]): string {
+  try {
+    // This will crash in some browsers if
+    // `u16s` is too large.
+    return String.fromCharCode(...u16s);
+  } catch {
+    let out = "";
+
+    for (let i = 0; i < u16s.length; i++) {
+      out += String.fromCharCode(u16s[i]);
+    }
+
+    return out;
+  }
 }
