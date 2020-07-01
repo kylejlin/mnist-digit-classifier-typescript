@@ -4,7 +4,12 @@ import "./App.css";
 import { AccuracyRate, LabeledImage } from "./data";
 import { MnistData, mnistProm } from "./data/mnist";
 import { Matrix } from "./matrix";
-import { Network, StochasticGradientDescentHyperParameters } from "./network";
+import {
+  Network,
+  StochasticGradientDescentHyperParameters,
+  WeightInitializationMethod,
+} from "./network";
+import { networkFactory } from "./network/networkFactory";
 import { testNetwork, trainNetwork } from "./networkServices";
 import {
   AppState,
@@ -25,7 +30,6 @@ import {
   ViewState,
 } from "./state";
 import { imageSaver, networkSaver } from "./stateSavers";
-import { networkFactory } from "./network/networkFactory";
 
 interface Rect {
   x: number;
@@ -58,6 +62,9 @@ export default class App extends React.Component<{}, AppState> {
   }
 
   bindMethods(): void {
+    this.onWeightInitializationMethodChange = this.onWeightInitializationMethodChange.bind(
+      this
+    );
     this.onCreateNetworkClick = this.onCreateNetworkClick.bind(this);
     this.onTrainClick = this.onTrainClick.bind(this);
     this.onTestClick = this.onTestClick.bind(this);
@@ -218,6 +225,24 @@ export default class App extends React.Component<{}, AppState> {
 
           <li>Output layer: 10 neurons</li>
         </ol>
+
+        <label>
+          Weight initialization method:{" "}
+          <select
+            value={state.weightInitializationMethod}
+            onChange={this.onWeightInitializationMethodChange}
+          >
+            <option value={WeightInitializationMethod.Uniform}>
+              Uniform random on [-1, 1)
+            </option>
+            <option value={WeightInitializationMethod.LargeGaussian}>
+              Large Gaussian
+            </option>
+            <option value={WeightInitializationMethod.SmallGaussian}>
+              Small Gaussian
+            </option>
+          </select>
+        </label>
 
         <button
           onClick={this.onCreateNetworkClick}
@@ -607,6 +632,18 @@ export default class App extends React.Component<{}, AppState> {
     });
   }
 
+  onWeightInitializationMethodChange(
+    event: React.ChangeEvent<HTMLSelectElement>
+  ): void {
+    const state = this.expectState(StateType.CreateNetwork);
+    const newState: CreateNetworkState = {
+      ...state,
+      weightInitializationMethod: event.target
+        .value as WeightInitializationMethod,
+    };
+    this.saveState(newState);
+  }
+
   onCreateNetworkClick(): void {
     const state = this.expectState(StateType.CreateNetwork);
     if (state.hiddenLayerSizeInputValues.every(isPositiveIntStr)) {
@@ -620,7 +657,10 @@ export default class App extends React.Component<{}, AppState> {
 
         stateType: StateType.NetworkMainMenu,
 
-        network: networkFactory.fromSizes(layerSizes),
+        network: networkFactory.fromLayerSizes(
+          layerSizes,
+          state.weightInitializationMethod
+        ),
       };
 
       this.saveState(newState);
@@ -722,6 +762,7 @@ export default class App extends React.Component<{}, AppState> {
       stateType: StateType.CreateNetwork,
 
       hiddenLayerSizeInputValues: ["30"],
+      weightInitializationMethod: WeightInitializationMethod.SmallGaussian,
       previousNetwork: option.some(state.network),
     };
     this.saveState(newState);
@@ -1139,6 +1180,7 @@ function getInitialState(): AppState {
       stateType: StateType.CreateNetwork,
 
       hiddenLayerSizeInputValues: ["30"],
+      weightInitializationMethod: WeightInitializationMethod.SmallGaussian,
       previousNetwork: option.none(),
     }),
 

@@ -36,6 +36,12 @@ export interface MatrixMap {
   length: number;
 }
 
+export enum WeightInitializationMethod {
+  Uniform = "Uniform",
+  LargeGaussian = "LargeGaussian",
+  SmallGaussian = "SmallGaussian",
+}
+
 export interface StochasticGradientDescentHyperParameters {
   batchSize: number;
   epochs: number;

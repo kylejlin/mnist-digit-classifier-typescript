@@ -1,9 +1,9 @@
 import { Option, Result } from "rusty-ts";
 import { AccuracyRate } from "./data";
 import { MnistData } from "./data/mnist";
-import { Network } from "./network";
-import { NetworkTester, NetworkTrainer } from "./networkServices";
 import { Matrix } from "./matrix";
+import { Network, WeightInitializationMethod } from "./network";
+import { NetworkTester, NetworkTrainer } from "./networkServices";
 
 export type AppState =
   | CreateNetworkState
@@ -45,9 +45,9 @@ export interface CreateNetworkState {
   stateType: StateType.CreateNetwork;
 
   hiddenLayerSizeInputValues: string[];
+  weightInitializationMethod: WeightInitializationMethod;
   previousNetwork: Option<Network>;
 }
-
 export interface NetworkMainMenuState {
   mnist: Option<MnistData>;
 

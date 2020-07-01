@@ -3,11 +3,17 @@ import {
   Network,
   StochasticGradientDescentHyperParameters,
   WeightedSumsAndActivations,
+  WeightInitializationMethod,
 } from "..";
 import { AccuracyRate, LabeledImage, VectorLabeledImage } from "../../data";
 import { DeepReadonly } from "../../deepReadonly";
 import { Matrix } from "../../matrix";
-import { argmax, divideIntoMiniBatches, Gradients } from "../utils";
+import {
+  argmax,
+  divideIntoMiniBatches,
+  Gradients,
+  initializeWeights,
+} from "../utils";
 
 /** Cross-entropy cost, sigmoid activation, L2 regularization */
 export class Chapter3CrossEntropyL2Network implements Network {
@@ -36,9 +42,9 @@ export class Chapter3CrossEntropyL2Network implements Network {
     return new Chapter3CrossEntropyL2Network(weights, biases);
   }
 
-  static fromEntryInitializer(
+  static fromLayerSizes(
     layerSizes: number[],
-    entryInitializer: () => number,
+    initializationMethod: WeightInitializationMethod,
     log?: (accuracyRate: AccuracyRate, epoch: number) => void
   ): Network {
     const numberOfLayers = layerSizes.length;
@@ -49,17 +55,11 @@ export class Chapter3CrossEntropyL2Network implements Network {
       const inputLayer = outputLayer - 1;
       const outputLayerSize = layerSizes[outputLayer];
       const inputLayerSize = layerSizes[inputLayer];
-      weights[outputLayer] = Matrix.fromEntryInitializer(
-        outputLayerSize,
-        inputLayerSize,
-        entryInitializer
-      );
-      biases[outputLayer] = Matrix.fromEntryInitializer(
-        outputLayerSize,
-        1,
-        entryInitializer
-      );
+      weights[outputLayer] = Matrix.zeros(outputLayerSize, inputLayerSize);
+      biases[outputLayer] = Matrix.zeros(outputLayerSize, 1);
     }
+
+    initializeWeights(initializationMethod, weights);
 
     return new Chapter3CrossEntropyL2Network(weights, biases, log);
   }

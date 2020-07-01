@@ -1,5 +1,6 @@
-import { MatrixMap } from ".";
+import { MatrixMap, WeightInitializationMethod } from ".";
 import { VectorLabeledImage } from "../data";
+import { uniformRandom, normalRandom } from "../random";
 
 export interface Gradients {
   weightGradients: MatrixMap;
@@ -46,4 +47,24 @@ export function argmax(arr: ArrayLike<number>): number {
     }
   }
   return maxIndex;
+}
+
+export function initializeWeights(
+  method: WeightInitializationMethod,
+  weights: MatrixMap
+): void {
+  for (let i = 1; i < weights.length; i++) {
+    const matrix = weights[i];
+    const initializer: () => number = (() => {
+      switch (method) {
+        case WeightInitializationMethod.Uniform:
+          return uniformRandom;
+        case WeightInitializationMethod.LargeGaussian:
+          return () => normalRandom(0, 1);
+        case WeightInitializationMethod.SmallGaussian:
+          return () => normalRandom(0, 1 / Math.sqrt(matrix.columns));
+      }
+    })();
+    matrix.applyElementwiseInto(initializer, matrix);
+  }
 }
