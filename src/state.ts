@@ -67,6 +67,7 @@ export interface HyperParameterMenuState {
   epochsInputValue: string;
   learningRateInputValue: string;
   regularizationRateInputValue: string;
+  momentumCoefficientInputValue: string;
 }
 
 export interface TrainingInProgressState {

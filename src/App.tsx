@@ -80,6 +80,9 @@ export default class App extends React.Component<{}, AppState> {
     this.onRegularizationRateInputValueChange = this.onRegularizationRateInputValueChange.bind(
       this
     );
+    this.onMomentumCoefficientInputValueChange = this.onMomentumCoefficientInputValueChange.bind(
+      this
+    );
     this.onStartTrainingClick = this.onStartTrainingClick.bind(this);
     this.onEpochComplete = this.onEpochComplete.bind(this);
     this.onTrainerTerminate = this.onTrainerTerminate.bind(this);
@@ -331,6 +334,37 @@ export default class App extends React.Component<{}, AppState> {
           />
         </label>
 
+        <label>
+          Momentum coefficient:{" "}
+          <input
+            type="text"
+            className={
+              isOnInclusiveUnitInterval(+state.momentumCoefficientInputValue)
+                ? ""
+                : "InvalidInput"
+            }
+            value={state.momentumCoefficientInputValue}
+            onChange={this.onMomentumCoefficientInputValueChange}
+          />
+          <input
+            type="range"
+            className={
+              isOnInclusiveUnitInterval(+state.momentumCoefficientInputValue)
+                ? ""
+                : "InvalidInput"
+            }
+            min={0}
+            max={1}
+            step={0.001}
+            value={
+              Number.isNaN(+state.momentumCoefficientInputValue)
+                ? 0
+                : +state.momentumCoefficientInputValue
+            }
+            onChange={this.onMomentumCoefficientInputValueChange}
+          />
+        </label>
+
         <button
           onClick={this.onStartTrainingClick}
           disabled={
@@ -338,7 +372,8 @@ export default class App extends React.Component<{}, AppState> {
               isPositiveIntStr(state.batchSizeInputValue) &&
               isPositiveIntStr(state.epochsInputValue) &&
               isPositiveNumStr(state.learningRateInputValue) &&
-              isPositiveNumStr(state.regularizationRateInputValue)
+              isPositiveNumStr(state.regularizationRateInputValue) &&
+              isOnInclusiveUnitInterval(+state.momentumCoefficientInputValue)
             )
           }
         >
@@ -693,6 +728,7 @@ export default class App extends React.Component<{}, AppState> {
       epochsInputValue: "30",
       learningRateInputValue: "0.5",
       regularizationRateInputValue: "5.0",
+      momentumCoefficientInputValue: "0.0",
     };
     this.saveState(newState);
   }
@@ -810,6 +846,17 @@ export default class App extends React.Component<{}, AppState> {
     this.saveState(newState);
   }
 
+  onMomentumCoefficientInputValueChange(
+    event: React.ChangeEvent<HTMLInputElement>
+  ): void {
+    const state = this.expectState(StateType.HyperParameterMenu);
+    const newState: HyperParameterMenuState = {
+      ...state,
+      momentumCoefficientInputValue: event.target.value,
+    };
+    this.saveState(newState);
+  }
+
   onStartTrainingClick(): void {
     const state = this.expectState(StateType.HyperParameterMenu);
 
@@ -818,6 +865,7 @@ export default class App extends React.Component<{}, AppState> {
       epochs: +state.epochsInputValue,
       learningRate: +state.learningRateInputValue,
       regularizationRate: +state.regularizationRateInputValue,
+      momentumCoefficient: +state.momentumCoefficientInputValue,
     };
 
     const networkTrainer = trainNetwork(state.network, hyperParams, {
@@ -1200,6 +1248,10 @@ function isPositiveIntStr(s: string): boolean {
 
 function isPositiveNumStr(s: string): boolean {
   return Number.isFinite(+s) && +s > 0;
+}
+
+function isOnInclusiveUnitInterval(n: number): boolean {
+  return 0 <= n && n <= 1;
 }
 
 function getViewedImage(state: ViewState, mnist: MnistData): LabeledImage {
