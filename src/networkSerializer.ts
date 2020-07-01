@@ -24,8 +24,8 @@ export function serializeNetwork(network: Network): ArrayBuffer {
     uints[1 + i] = network.layerSizes[i];
   }
 
-  const floats = new Float64Array(buffer, numberOfBytesForSizes);
-  floats.set(entries);
+  const floats = new Float64Array(entries);
+  putBuffer(floats.buffer, buffer, numberOfBytesForSizes);
 
   return buffer;
 }
@@ -60,6 +60,18 @@ function getEntries(network: Network): Float64Array {
   }
 
   return entries;
+}
+
+function putBuffer(
+  src: ArrayBuffer,
+  dest: ArrayBuffer,
+  byteOffset: number = 0
+): void {
+  const srcU8s = new Uint8Array(src);
+  const destU8s = new Uint8Array(dest);
+  for (let i = 0; i < srcU8s.length; i++) {
+    destU8s[byteOffset + i] = srcU8s[i];
+  }
 }
 
 export function deserializeNetwork(buffer: ArrayBuffer): Network {
