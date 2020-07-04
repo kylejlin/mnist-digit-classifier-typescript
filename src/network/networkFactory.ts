@@ -1,5 +1,5 @@
 import { MatrixMap, Network, WeightInitializationMethod } from ".";
-import { Chapter3CrossEntropyL2NetworkMomentum } from "./networks/ch3crossEntropyL2Momentum";
+import { Chapter3SoftmaxCrossEntropyL2NetworkMomentum } from "./networks/ch3softmaxCrossEntropyL2Momentum";
 
 export interface NetworkFactory {
   fromLayerSizes(
@@ -26,13 +26,13 @@ export const networkFactory: NetworkFactory = {
     layerSizes: number[],
     initializationMethod: WeightInitializationMethod
   ): Network {
-    return Chapter3CrossEntropyL2NetworkMomentum.fromLayerSizes(
+    return Chapter3SoftmaxCrossEntropyL2NetworkMomentum.fromLayerSizes(
       layerSizes,
       initializationMethod
     );
   },
   fromWeightsAndBiases(weights: MatrixMap, biases: MatrixMap): Network {
-    return Chapter3CrossEntropyL2NetworkMomentum.fromWeightsAndBiases(
+    return Chapter3SoftmaxCrossEntropyL2NetworkMomentum.fromWeightsAndBiases(
       weights,
       biases
     );

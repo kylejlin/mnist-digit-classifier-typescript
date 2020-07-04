@@ -157,15 +157,33 @@ export class Matrix {
   subtractInto(other: Matrix, out: Matrix): Matrix {
     if (!(other.rows === this.rows && other.columns === this.columns)) {
       throw new TypeError(
-        "Cannot add a " +
-          this.rows +
-          "x" +
-          this.columns +
-          " matrix to a " +
+        "Cannot subtract a " +
           other.rows +
           "x" +
           other.columns +
+          " matrix from a " +
+          this.rows +
+          "x" +
+          this.columns +
           " matrix."
+      );
+    }
+
+    if (!(this.rows === out.rows && this.columns === out.columns)) {
+      throw new TypeError(
+        "Cannot subtract a " +
+          other.rows +
+          "x" +
+          other.columns +
+          " matrix from a " +
+          this.rows +
+          "x" +
+          this.columns +
+          " matrix into a " +
+          out.rows +
+          "x" +
+          out.columns +
+          " matrix. The source matrix and destination matrix must have the same dimensions."
       );
     }
 
@@ -175,6 +193,30 @@ export class Matrix {
     const outSize = outData.length;
     for (let i = 0; i < outSize; i++) {
       outData[i] = thisData[i] - otherData[i];
+    }
+    return out;
+  }
+
+  subtractScalarInto(n: number, out: Matrix): Matrix {
+    if (!(this.rows === out.rows && this.columns === out.columns)) {
+      throw new TypeError(
+        "Cannot subtract a scalar from a " +
+          this.rows +
+          "x" +
+          this.columns +
+          " matrix into a " +
+          out.rows +
+          "x" +
+          out.columns +
+          " matrix. MThe source matrix and destination matrix must have the same dimensions."
+      );
+    }
+
+    const thisData = this.data;
+    const outData = out.data;
+    const outSize = outData.length;
+    for (let i = 0; i < outSize; i++) {
+      outData[i] = thisData[i] - n;
     }
     return out;
   }
@@ -359,6 +401,29 @@ export class Matrix {
     for (let i = 0; i < thisSize; i++) {
       thisData[i] = 0;
     }
+  }
+
+  maxEntry(): number {
+    let max = -Infinity;
+    const thisData = this.data;
+    const thisSize = thisData.length;
+    for (let i = 0; i < thisSize; i++) {
+      const v = thisData[i];
+      if (v > max) {
+        max = v;
+      }
+    }
+    return max;
+  }
+
+  sumOfEntries(): number {
+    let sum = 0;
+    const thisData = this.data;
+    const thisSize = thisData.length;
+    for (let i = 0; i < thisSize; i++) {
+      sum += thisData[i];
+    }
+    return sum;
   }
 
   print(decimals: number): string {

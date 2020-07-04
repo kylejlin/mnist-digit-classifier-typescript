@@ -347,6 +347,59 @@ test("Matrix.prototype.subtractInto throws if RHS matrix has different dimension
   }).toThrow();
 });
 
+test("Matrix.prototype.subtractInto throws if out matrix has different dimensions", () => {
+  const a = Matrix.fromRows([
+    [-1, 2],
+    [3, -4],
+    [-5, -6],
+  ]);
+  const b = Matrix.fromRows([
+    [-1, 2, 3],
+    [-4, 5, 6],
+  ]);
+
+  expect(() => {
+    a.subtractInto(a, b);
+  }).toThrow();
+});
+
+test("Matrix.prototype.subtractScalarInto", () => {
+  const a = Matrix.fromRows([
+    [-1, 2],
+    [3, -4],
+    [-5, -6],
+  ]);
+  const b = a.subtractScalarInto(-2.3, Matrix.zeros(a.rows, a.columns));
+  const c = a.subtractScalarInto(-2.3, a);
+  const expected = Matrix.fromRows([
+    [-1 - -2.3, 2 - -2.3],
+    [3 - -2.3, -4 - -2.3],
+    [-5 - -2.3, -6 - -2.3],
+  ]);
+
+  expectEquals(b, expected);
+  expectEquals(c, expected);
+  expect(c).toBe(a);
+});
+
+test("Matrix.prototype.subtractScalarInto throws if out matrix has different dimensions", () => {
+  const a = Matrix.fromRows([
+    [-1, 2],
+    [3, -4],
+    [-5, -6],
+  ]);
+
+  expect(() => {
+    a.subtractScalarInto(-2.3, Matrix.zeros(a.rows, a.rows));
+  });
+  expect(() => {
+    a.subtractScalarInto(-2.3, Matrix.zeros(a.columns, a.columns));
+  });
+  expect(() => {
+    a.subtractScalarInto(-2.3, Matrix.zeros(a.columns, a.rows));
+  });
+});
+
 test("Matrix.prototype.immutMultiply", () => {
   const a = Matrix.fromRows([
     [-1, 2],
@@ -687,6 +740,38 @@ test("Matrix.prototype.setToZero", () => {
   a.setToZero();
 
   expectEquals(a, Matrix.zeros(3, 2));
+});
+
+test("Matrix.prototype.maxEntry()", () => {
+  const a = Matrix.fromRows([
+    [1, -2],
+    [-3.5, 4.2],
+    [5, 6.1],
+  ]);
+  const b = Matrix.fromRows([
+    [-11, 12.6],
+    [-10.5, 9.2],
+    [8, 7.1],
+  ]);
+
+  expect(a.maxEntry()).toBe(6.1);
+  expect(b.maxEntry()).toBe(12.6);
+});
+
+test("Matrix.prototype.sumOfEntries()", () => {
+  const a = Matrix.fromRows([
+    [1, -2],
+    [-3.5, 4.2],
+    [5, 6.1],
+  ]);
+  const b = Matrix.fromRows([
+    [-11, 12.6],
+    [-10.5, 9.2],
+    [8, 7.1],
+  ]);
+
+  expect(a.sumOfEntries()).toBe(1 + -2 + -3.5 + 4.2 + 5 + 6.1);
+  expect(b.sumOfEntries()).toBe(-11 + 12.6 + -10.5 + 9.2 + 8 + 7.1);
 });
 
 function expectEquals(a: Matrix, b: Matrix): void {
